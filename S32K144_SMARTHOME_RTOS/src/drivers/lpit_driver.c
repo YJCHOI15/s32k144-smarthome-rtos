@@ -25,8 +25,6 @@ void SHD_LPIT0_Init(void) {
  * 지정된 LPIT 채널에 주기적인 타이머를 설정한다.
  */
 void SHD_LPIT0_SetPeriodic(uint8_t timer_ch, uint32_t period_ms, void (*callback)(void)) {
-    /* 채널 번호 유효성 검사 */
-    if (timer_ch > 3) return;
 
     /* 1. 콜백 함수 등록 */
     g_lpit_callbacks[timer_ch] = callback;
@@ -46,36 +44,53 @@ void SHD_LPIT0_SetPeriodic(uint8_t timer_ch, uint32_t period_ms, void (*callback
     LPIT0->MIER |= (1UL << timer_ch);
 }
 
+/* shh_sensor - 온습도 통신용 delay 함수 */
+void SHD_LPIT0_CH3_DelayUs(uint32_t us) {
+
+    /* 1. 타이머 주기를 클럭 카운트 값으로 변환 (8MHz 기준, 1us = 8 카운트) */
+    uint32_t timer_val = 8 * us;
+    LPIT0->TMR[3].TVAL = timer_val;
+
+    /* 2. 타이머 시작 */
+    LPIT0->SETTEN |= (1UL << 3);
+
+    /* 3. 타이머 만료 플래그(TIF)가 1이 될 때까지 대기 (Polling) */
+    while ((LPIT0->MSR & (1UL << 3)) == 0);
+
+    /* 4. 타이머 비활성화 및 플래그 클리어 */
+    LPIT0->CLRTEN |= (1UL << 3);
+    LPIT0->MSR = (1UL << 3); // 플래그는 쓰기로 클리어
+}
 
 /* 이 함수들은 startup.s 파일의 벡터 테이블에 각각 등록되어 있다. */
+
+// Sensor_Task를 1초마다 깨워서 온/습도, 밝기 값 읽음
 void LPIT0_Ch0_IRQHandler(void) {
-    /* 1. 인터럽트 플래그 클리어 (쓰기로 클리어) */
     LPIT0->MSR = LPIT_MSR_TIF0_MASK;
 
-    /* 2. 등록된 콜백 함수 호출 */
     if (g_lpit_callbacks[0] != NULL) {
         g_lpit_callbacks[0]();
     }
 }
 
-void LPIT0_Ch1_IRQHandler(void)
-{
+// CAN_Comm_Task가 0.5초마다 시스템의 현재 상태를 외부에 알림
+void LPIT0_Ch1_IRQHandler(void) {
     LPIT0->MSR = LPIT_MSR_TIF1_MASK;
     if (g_lpit_callbacks[1] != NULL) {
         g_lpit_callbacks[1]();
     }
 }
 
-void LPIT0_Ch2_IRQHandler(void)
-{
+// 보안 모드일 때 1초마다 인터럽트를 발생시켜 LED 상태를 반전시킴
+void LPIT0_Ch2_IRQHandler(void) {
     LPIT0->MSR = LPIT_MSR_TIF2_MASK;
     if (g_lpit_callbacks[2] != NULL) {
         g_lpit_callbacks[2]();
     }
 }
 
-void LPIT0_Ch3_IRQHandler(void)
-{
+// 사용 안함
+void LPIT0_Ch3_IRQHandler(void) {
     LPIT0->MSR = LPIT_MSR_TIF3_MASK;
     if (g_lpit_callbacks[3] != NULL) {
         g_lpit_callbacks[3]();

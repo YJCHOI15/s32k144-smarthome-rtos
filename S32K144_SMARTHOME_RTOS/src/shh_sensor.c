@@ -1,59 +1,125 @@
 #include "shh_sensor.h"
+#include "drivers/gpio_driver.h"
 #include "drivers/adc_driver.h"
-#include "drivers/lpi2c_driver.h"
+#include "drivers/lpit_driver.h"
 #include "sh_config.h"
+#include <stdbool.h>
 
 
-float SHH_ReadTemperature(void)
-{
-    uint8_t read_buffer[2];
-    uint8_t cmd_measure[] = {0x2C, 0x06}; // 예시: 고정밀 측정 명령
+/**
+ * DHT11 온습도 센서 통신과정 
+ * 1. 통신개시 알림: mcu가 센서로 18ms 동안 LOW 유지하고 
+ *                  HIGH로 전환해서 20-40ms 기다림
+ *                  이 신호를 받으면 DHT11는 대기상태에서 깨어남
+ * 2. 응답신호: DHT11가 대기상태에서 깨어나 80us LOW 신호 보내고
+ *             다시 80us HIGH를 보냄으로써 준비가 됐음을 mcu에 알림
+ * 3. 온습도 정보 송신: DHT11가 40bit의 데이터열을 보낸다.
+ *                     HIGH 26~28us : 0
+ *                     LOW  70us    : 1    -> HIGH의 길이로 0, 1 정의
+ * 4. 데이터 수신 및 파싱: 습도(16bit) + 온도(16bit) + 체크섬(8bit) 수신
+ *                        각 16비트의 상위 8비트가 값을 의미한다.
+ *                        하위 8비트는 소수점이나 DHT11은 지원하지 않는다.
+ *                        온습도 값을 더한 값이 체크섬인데 
+ *                        일치하지 않으면 오류가 발생했음을 의미한다.  
+ */
 
-    // 1. 측정 시작 명령 전송
-    if (!SHD_LPI2C0_Write(SENSOR_TEMP_HUMI_ADDR, cmd_measure, 2))
-    {
-        return -1.0f; // 통신 실패
+/* 온습도 센서 통신을 위한 내부 함수 선언 */
+static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data);
+
+static uint8_t g_last_temperature = -99;
+static uint8_t g_last_humidity = -99;
+
+/* DHT11 센서로부터 40비트 데이터를 읽어오는 내부 함수 */
+static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
+
+    uint8_t bit_count = 0;
+    uint8_t current_byte = 0;
+    uint32_t timeout_counter;
+
+    // 1. 통신 시작 신호 (MCU -> DHT11)
+    SHD_GPIO_InitPin(PIN_TEMP_HUMI, GPIO_OUTPUT);
+    SHD_GPIO_WritePin(PIN_TEMP_HUMI, 0);
+    SHD_LPIT0_CH3_DelayUs(18000);
+    SHD_GPIO_WritePin(PIN_TEMP_HUMI, 1);
+    SHD_LPIT0_CH3_DelayUs(30);
+    SHD_GPIO_InitPin(PIN_TEMP_HUMI, GPIO_INPUT);
+
+
+    // 2. DHT11 응답 신호 확인 (DHT11 -> MCU)
+    timeout_counter = 100;
+    while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1) {
+        if (timeout_counter-- == 0) return false; 
+        SHD_LPIT0_CH3_DelayUs(1);
+    }
+    timeout_counter = 100;
+    while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 0) {
+        if (timeout_counter-- == 0) return false; 
+        SHD_LPIT0_CH3_DelayUs(1);
+    }
+    // 데이터 전송 시작을 위해 핀이 다시 Low가 될 때까지 대기
+    timeout_counter = 100;
+    while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1) {
+        if (timeout_counter-- == 0) return false; 
+        SHD_LPIT0_CH3_DelayUs(1);
     }
 
-    // 2. 센서가 측정할 동안 잠시 대기 (실제로는 RTOS 딜레이 사용 권장)
-    for (volatile int i = 0; i < 20000; ++i);
+    // 3. 40비트 데이터 수신 (DHT11 -> MCU)
+    for (int i = 0; i < 40; i++) {
+        // 비트 시작 (Low)
+        timeout_counter = 100;
+        while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 0) {
+            if (timeout_counter-- == 0) return false; 
+            SHD_LPIT0_CH3_DelayUs(1);
+        }
 
-    // 3. 측정된 데이터 읽기
-    if (SHD_LPI2C0_Read(SENSOR_TEMP_HUMI_ADDR, read_buffer, 2))
-    {
-        int16_t temp_raw = (int16_t)((read_buffer[0] << 8) | read_buffer[1]);
-        // 4. 원시(Raw) 데이터를 실제 온도 값으로 변환 (센서 데이터시트 참조)
-        // 예시 공식: Temp (°C) = -45 + 175 * (temp_raw / 65535)
-        float temperature = -45.0f + 175.0f * (float)temp_raw / 65535.0f;
-        return temperature;
+        // 비트 길이 측정 (High)
+        uint32_t high_duration = 0;
+        while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1) {
+            high_duration++;
+            SHD_LPIT0_CH3_DelayUs(1);
+            if (high_duration > 200) return false; 
+        }
+
+        // 왼쪽 시프트로 비트 자리 마련
+        current_byte <<= 1;
+        
+        // 26-28us보다 길면 1, 짧으면 0
+        if (high_duration > 40) {
+            current_byte |= 1;
+        }
+
+        bit_count++;
+        if (bit_count == 8) {
+            data[i/8] = current_byte;
+            bit_count = 0;
+            current_byte = 0;
+        }
     }
 
-    return -1.0f; // 통신 실패
+    // 4. 체크섬 검증
+    if (data[4] == ((data[0] + data[1] + data[2] + data[3]) & 0xFF)) {
+        return true;
+    }
+
+    return false;
 }
 
-float SHH_ReadHumidity(void)
-{
-    uint8_t read_buffer[2];
-    uint8_t cmd_measure[] = {0x2C, 0x06}; // 예시: 고정밀 측정 명령
 
-    // 실제로는 온도/습도가 함께 측정되므로, 이전 측정값을 활용하는 것이 효율적
-    // 여기서는 설명을 위해 독립적으로 구현
-    if (!SHD_LPI2C0_Write(SENSOR_TEMP_HUMI_ADDR, cmd_measure, 2))
-    {
-        return -1.0f;
+uint8_t SHH_ReadTemperature(void) {
+
+    uint8_t buffer[5] = {0,};
+    if (_SHH_Read_DHT11_Data(buffer)) {
+        g_last_humidity = buffer[0];
+        g_last_temperature = buffer[2];
     }
+    // 실패해도 마지막 성공값 반환
+    return g_last_temperature;
+}
 
-    for (volatile int i = 0; i < 20000; ++i);
-
-    if (SHD_LPI2C0_Read(SENSOR_TEMP_HUMI_ADDR, read_buffer, 2))
-    {
-        uint16_t humi_raw = (uint16_t)((read_buffer[0] << 8) | read_buffer[1]);
-        // 예시 공식: Humidity (%) = 100 * (humi_raw / 65535)
-        float humidity = 100.0f * (float)humi_raw / 65535.0f;
-        return humidity;
-    }
-
-    return -1.0f;
+uint8_t SHH_ReadHumidity(void) {
+    // SHH_ReadTemperature가 먼저 호출되어 값을 업데이트했다고 가정
+    // 이렇게 하면 DHT11과의 통신은 한 번만 수행된다. 
+    return g_last_humidity;
 }
 
 uint8_t SHH_ReadBrightnessSensor(void) {

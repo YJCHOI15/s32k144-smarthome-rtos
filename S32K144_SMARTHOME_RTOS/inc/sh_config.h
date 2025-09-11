@@ -67,22 +67,47 @@
 
 #define PIN_TEMP_HUMI                    ((port_pin_t){PORT_D, 6})
 
-/***********************************************************/
 
-/************************System Mode ***********************/
+/**************** SmartHome Data Structure *****************/
+
+/* 시스템 모드를 나타내는 열거형 */
 typedef enum {
     MODE_MONITORING,
     MODE_MANUAL,
     MODE_SECURITY
 } system_mode_t;
 
-/***********************************************************/
+/* Command Queue를 통해 전달될 메시지 구조체 */
+typedef struct {
+    uint8_t command_id; // 예: CMD_CYCLE_MODE, CMD_SELECT_DEVICE
+    int32_t value;      // 추가 데이터
+} command_msg_t;
+
+/* Sensor Data Queue를 통해 전달될 메시지 구조체 */
+typedef struct {
+    float temperature;
+    float humidity;
+    uint16_t cds_raw; // 0-4095
+    uint16_t vr_raw;  // 0-4095
+} sensor_data_t;
+
+/* Display Data Queue를 통해 전달될 메시지 구조체 */
+typedef struct {
+    char fnd_string[7]; // "TT:HH:BB" 형식
+    char oled_line1[20];
+    char oled_line2[20];
+} display_data_t;
+
+/* 공유 데이터: 여러 태스크가 접근하는 시스템의 현재 상태 */
+typedef struct {
+    system_mode_t current_mode;
+    // ... 기타 공유가 필요한 상태 변수들
+} system_status_t;
+
 
 /********************* I2C Slave Adddress ******************/
 
-#define SENSOR_OLED__ADDR 0x3C    // 또는 0x3D
-
-/***********************************************************/
+#define SENSOR_OLED_ADDR 0x3C    // 또는 0x3D
 
 /**************** RTOS & Application Configuration ****************/
 // (이곳에 큐 사이즈, 태스크 우선순위 등 다른 설정값들도 정의할 수 있습니다)
