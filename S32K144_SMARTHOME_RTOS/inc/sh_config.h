@@ -14,8 +14,8 @@
 #define PIN_LPI2C0_SDA                   ((port_pin_t){PORT_A, 2})
 #define PIN_LPI2C0_SCL                   ((port_pin_t){PORT_A, 3})
 
-#define PIN_ADC_CDS                      ((port_pin_t){PORT_B, 0})
-#define PIN_ADC_VR                       ((port_pin_t){PORT_B, 1})
+#define PIN_ADC0_SE4_CDS                 ((port_pin_t){PORT_B, 0})
+#define PIN_ADC0_SE5_VR                  ((port_pin_t){PORT_B, 1})
 
 #define PIN_UWAVE_TRIG                   ((port_pin_t){PORT_C, 12})
 #define PIN_UWAVE_ECHO                   ((port_pin_t){PORT_C, 13})
@@ -53,7 +53,7 @@
 #define PIN_FND_SEL5                     ((port_pin_t){PORT_D, 13})
 #define PIN_FND_SEL6                     ((port_pin_t){PORT_D, 14})
 
-#define PIN_PEIZO                        ((port_pin_t){PORT_C, 8})
+#define PIN_PIEZO                        ((port_pin_t){PORT_C, 8})
 #define PIN_BUZZER                       ((port_pin_t){PORT_C, 9})
 
 #define PIN_DC_MOTOR                     ((port_pin_t){PORT_D, 8})
