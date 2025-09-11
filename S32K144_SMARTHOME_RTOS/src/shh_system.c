@@ -80,7 +80,14 @@ void SHH_Init(void)
 
     SHD_PORT_SetPinMux(PIN_RELAY, PORT_MUX_GPIO);
 
+    SHD_PORT_SetPinMux(PIN_TEMP_HUMI, PORT_MUX_GPIO);
+
     /* 4. 각 주변장치 드라이버 초기화 및 GPIO 방향 설정 */
+
+    // 온습도 센서는 입출력 번갈아가며 작동하므로 초기화 하지 않음
+    // SHD_GPIO_InitPin(PIN_TEMP_HUMI, GPIO_INPUT);    
+    // SHD_GPIO_InitPin(PIN_TEMP_HUMI, GPIO_OUTPUT);
+
     // GPIO 입력 핀 초기화
     SHD_GPIO_InitPin(PIN_UWAVE_ECHO, GPIO_INPUT);
     SHD_GPIO_InitPin(PIN_BTN1, GPIO_INPUT);

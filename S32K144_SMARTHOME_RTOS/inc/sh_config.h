@@ -65,6 +65,8 @@
 
 #define PIN_RELAY                        ((port_pin_t){PORT_D, 9})
 
+#define PIN_TEMP_HUMI                    ((port_pin_t){PORT_D, 6})
+
 /***********************************************************/
 
 /************************System Mode ***********************/
