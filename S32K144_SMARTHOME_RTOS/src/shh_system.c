@@ -137,13 +137,13 @@ void SHH_Init(void)
     SHD_LPIT0_Init();
     SHD_LPUART1_Init(115200);
 
-    // /* 5. 인터럽트 설정 및 활성화 */
-    // // 핀 인터럽트 설정
-    // SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_RISING_EDGE);
-    // SHD_PORT_SetPinIT(PIN_BTN1, PORT_IT_FALLING_EDGE);
-    // SHD_PORT_SetPinIT(PIN_BTN2, PORT_IT_FALLING_EDGE);
-    // SHD_PORT_SetPinIT(PIN_BTN3, PORT_IT_FALLING_EDGE);
-    // SHD_PORT_SetPinIT(PIN_BTN4, PORT_IT_FALLING_EDGE);
+    /* 5. 인터럽트 설정 및 활성화 */
+    // 핀 인터럽트 설정
+    SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_IRQ_RISING);
+    SHD_PORT_SetPinIT(PIN_BTN1, PORT_IT_IRQ_FALLING);
+    SHD_PORT_SetPinIT(PIN_BTN2, PORT_IT_IRQ_FALLING);
+    SHD_PORT_SetPinIT(PIN_BTN3, PORT_IT_IRQ_FALLING);
+    SHD_PORT_SetPinIT(PIN_BTN4, PORT_IT_IRQ_FALLING);
 
     // // NVIC 인터럽트 활성화 및 우선순위 설정
     // SHD_IT_EnableIRQ(PORTC_IRQn); // uWave 센서(PTC12) 및 기타 PORTC 핀들
