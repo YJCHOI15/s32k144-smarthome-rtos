@@ -7,7 +7,7 @@ static void (*g_lpit_callbacks[4])(void) = {NULL, NULL, NULL, NULL};
 /**
  * LPIT 모듈을 초기화한다.
  */
-void SHD_LPIT_Init(void) {
+void SHD_LPIT0_Init(void) {
     /* 1. LPIT 모듈에 클럭 활성화 (SOSCDIV2_CLK, 8MHz) */
     PCC->PCCn[PCC_LPIT_INDEX] = PCC_PCCn_PCS(1)      /* PCS=1: Select SOSCDIV2_CLK */
                               | PCC_PCCn_CGC_MASK;   /* CGC=1: Clock enabled */
@@ -24,7 +24,7 @@ void SHD_LPIT_Init(void) {
 /**
  * 지정된 LPIT 채널에 주기적인 타이머를 설정한다.
  */
-void SHD_LPIT_SetPeriodic(uint8_t timer_ch, uint32_t period_ms, void (*callback)(void)) {
+void SHD_LPIT0_SetPeriodic(uint8_t timer_ch, uint32_t period_ms, void (*callback)(void)) {
     /* 채널 번호 유효성 검사 */
     if (timer_ch > 3) return;
 
