@@ -61,34 +61,3 @@ bool SHD_LPI2C0_Write(uint8_t slave_addr, uint8_t* data, uint32_t len) {
 
     return true;
 }
-
-/**
- * I2C 버스를 통해 특정 주소의 슬레이브 장치로부터 데이터를 읽는다.
- */
-bool SHD_LPI2C0_Read(uint8_t slave_addr, uint8_t* buffer, uint32_t len) {
-    uint32_t i;
-    uint32_t timeout = 0;
-
-    /* 1. START 신호 및 슬레이브 주소(Read) 전송 */
-    LPI2C0->MTDR = LPI2C_MTDR_CMD(0b0100) | LPI2C_MTDR_DATA((slave_addr << 1) | 1);
-
-    /* 2. 읽을 데이터 길이 전송 */
-    LPI2C0->MTDR = LPI2C_MTDR_CMD(0b0001) | LPI2C_MTDR_DATA(len - 1);
-
-    /* 3. 데이터 수신 */
-    for (i = 0; i < len; ++i) {
-        timeout = 0;
-        /* 데이터 수신 레지스터에 데이터가 들어올 때까지 대기 (RDRF 플래그) */
-        while (!((LPI2C0->MSR) & LPI2C_MSR_RDF_MASK))
-        {
-            timeout++;
-            if (timeout > LPI2C_TIMEOUT) return false;
-        }
-        buffer[i] = (uint8_t)LPI2C0->MRDR;
-    }
-
-    /* 4. STOP 신호 전송 */
-    LPI2C0->MTDR = LPI2C_MTDR_CMD(0b0010);
-
-    return true;
-}

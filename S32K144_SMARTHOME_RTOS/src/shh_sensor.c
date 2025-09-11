@@ -3,10 +3,6 @@
 #include "drivers/lpi2c_driver.h"
 #include "sh_config.h"
 
-/* 온습도 센서의 I2C 주소 (sh_config.h 등에서 정의 필요) */
-#ifndef SENSOR_TEMP_HUMI_ADDR
-#define SENSOR_TEMP_HUMI_ADDR 0x44 // 예시 주소
-#endif
 
 float SHH_ReadTemperature(void)
 {
