@@ -5,6 +5,19 @@
 #include <stdint.h>  
 
 typedef enum {
+    PORT_A,
+    PORT_B,
+    PORT_C,
+    PORT_D,
+    PORT_E
+} port_name_t;
+
+typedef struct {
+    port_name_t port;
+    uint8_t pin;
+} port_pin_t;
+
+typedef enum {
     PORT_MUX_ANALOG = 0,
     PORT_MUX_GPIO   = 1,
     PORT_MUX_ALT2   = 2,
