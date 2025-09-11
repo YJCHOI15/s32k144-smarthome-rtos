@@ -137,7 +137,7 @@ void SHH_Init(void)
     SHD_LPIT0_Init();
     SHD_LPUART1_Init(115200);
 
-    /* 5. 인터럽트 설정 및 활성화 */
+    /* 5. 인터럽트 설정 및 활성화 (+lpit0 타이머 주기 설정) */
     // 핀 인터럽트 설정
     SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_IRQ_RISING);
     SHD_PORT_SetPinIT(PIN_BTN1, PORT_IT_IRQ_FALLING);
@@ -145,17 +145,23 @@ void SHH_Init(void)
     SHD_PORT_SetPinIT(PIN_BTN3, PORT_IT_IRQ_FALLING);
     SHD_PORT_SetPinIT(PIN_BTN4, PORT_IT_IRQ_FALLING);
 
-    // // NVIC 인터럽트 활성화 및 우선순위 설정
-    // SHD_IT_EnableIRQ(PORTC_IRQn); // uWave 센서(PTC12) 및 기타 PORTC 핀들
-    // SHD_IT_SetPriority(PORTC_IRQn, 5);
+    // NVIC 인터럽트 활성화 및 우선순위 설정
+    SHD_IT_EnableIRQ(PORTC_IRQn);             // uWave-echo(PTC13)
+    SHD_IT_SetPriority(PORTC_IRQn, 5);
 
-    // SHD_IT_EnableIRQ(PORTE_IRQn); // 버튼(PTE13-16)
-    // SHD_IT_SetPriority(PORTE_IRQn, 10);
+    SHD_IT_EnableIRQ(PORTE_IRQn);             // 버튼(PTE13-16)
+    SHD_IT_SetPriority(PORTE_IRQn, 10);
 
-    // SHD_IT_EnableIRQ(CAN0_ORed_0_15_MB_IRQn); // CAN0 수신
-    // SHD_IT_SetPriority(CAN0_ORed_0_15_MB_IRQn, 5);
+    SHD_IT_EnableIRQ(CAN0_ORed_0_15_MB_IRQn); // CAN0 수신
+    SHD_IT_SetPriority(CAN0_ORed_0_15_MB_IRQn, 5);
 
-    // SHD_IT_EnableIRQ(LPIT0_Ch0_IRQn); // 1초 주기 타이머
-    // SHD_IT_SetPriority(LPIT0_Ch0_IRQn, 12);
-    // // ... (사용할 모든 인터럽트에 대해 Enable 및 Priority 설정) ...
+    SHD_IT_EnableIRQ(LPIT0_Ch0_IRQn);         // 1s 타이머
+    SHD_IT_SetPriority(LPIT0_Ch0_IRQn, 12);
+
+    SHD_IT_EnableIRQ(LPIT0_Ch1_IRQn);         // 500ms 타이머
+    SHD_IT_SetPriority(LPIT0_Ch1_IRQn, 12);
+
+    SHD_IT_EnableIRQ(LPIT0_Ch2_IRQn);         // 2s 타이머
+    SHD_IT_SetPriority(LPIT0_Ch2_IRQn, 12);
+
 }
