@@ -13,57 +13,147 @@
 
 void SHH_Init(void)
 {
-    // /* 1. 코어 및 시스템 클럭 초기화 ) */
-    // SHD_System_Init();
+    /* 1. 코어 및 시스템 클럭 초기화 */
+    SHD_System_Init();
 
-    // /* 2. 각 PORT 모듈의 클럭 활성화 */
-    // SHD_PORT_Init();
+    /* 2. 각 PORT 모듈의 클럭 활성화 */
+    SHD_PORT_Init();
 
-    // /* 3. 핀맵에 따른 핀 기능(Mux) 및 인터럽트 설정 */
-    // // LPUART1 Pins
-    // SHD_PORT_SetPinMux(PIN_LPUART1_RX, PORT_MUX_ALT2);
-    // SHD_PORT_SetPinMux(PIN_LPUART1_TX, PORT_MUX_ALT2);
+    /* 3. 핀맵에 따른 핀 기능(Mux) 설정 */
+    SHD_PORT_SetPinMux(PIN_LPUART1_RX, PORT_MUX_ALT2);
+    SHD_PORT_SetPinMux(PIN_LPUART1_TX, PORT_MUX_ALT2);
 
-    // // CAN0 Pins
-    // SHD_PORT_SetPinMux(PIN_CAN0_RX, PORT_MUX_ALT5);
-    // SHD_PORT_SetPinMux(PIN_CAN0_TX, PORT_MUX_ALT5);
+    SHD_PORT_SetPinMux(PIN_CAN0_RX, PORT_MUX_ALT4);
+    SHD_PORT_SetPinMux(PIN_CAN0_TX, PORT_MUX_ALT5);
 
-    // // I2C0 Pins
-    // SHD_PORT_SetPinMux(PIN_LPI2C0_SCL, PORT_MUX_ALT2);
-    // SHD_PORT_SetPinMux(PIN_LPI2C0_SDA, PORT_MUX_ALT2);
+    SHD_PORT_SetPinMux(PIN_LPI2C0_SDA, PORT_MUX_ALT4);
+    SHD_PORT_SetPinMux(PIN_LPI2C0_SCL, PORT_MUX_ALT4);
 
-    // // ADC Pins (아날로그 기능으로 설정)
-    // SHD_PORT_SetPinMux(PIN_ADC_CDS, PORT_MUX_ANALOG);
-    // SHD_PORT_SetPinMux(PIN_ADC_VR, PORT_MUX_ANALOG);
+    SHD_PORT_SetPinMux(PIN_ADC_CDS, PORT_MUX_ANALOG);
+    SHD_PORT_SetPinMux(PIN_ADC_VR, PORT_MUX_ANALOG);
 
-    // // FTM0 (PWM) Pins
-    // SHD_PORT_SetPinMux(PIN_FTM0_CH1_LED8, PORT_MUX_ALT2);
-    // SHD_PORT_SetPinMux(PIN_FTM0_CH2_SERVO, PORT_MUX_ALT2);
+    SHD_PORT_SetPinMux(PIN_UWAVE_SENSOR, PORT_MUX_GPIO);
 
-    // // GPIO Pins (GPIO 기능으로 설정)
-    // // ... (모든 GPIO 핀에 대해 SHD_PORT_SetPinMux(PIN_XXX, PORT_MUX_GPIO) 호출) ...
+    SHD_PORT_SetPinMux(PIN_BTN1, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_BTN2, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_BTN3, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_BTN4, PORT_MUX_GPIO);
 
-    // // Interrupt Pins
-    // SHD_PORT_SetPinIT(PIN_BTN_1, PORT_IT_FALLING_EDGE);
-    // // ... (모든 버튼 및 uWave 센서 핀에 대해 인터럽트 설정) ...
+    SHD_PORT_SetPinMux(PIN_FTM0_CH1_LED8, PORT_MUX_ALT3);
+    SHD_PORT_SetPinMux(PIN_FTM0_CH2_SERVO, PORT_MUX_ALT4);
 
+    SHD_PORT_SetPinMux(PIN_LED_RED, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_LED_GREEN, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_LED_BLUE, PORT_MUX_GPIO);
 
-    // /* 4. 각 주변장치 드라이버 초기화 */
-    // SHD_GPIO_InitPin(PIN_LED_POWER, GPIO_OUTPUT); // 예시: 전원 LED
-    // // ... (모든 GPIO 핀에 대해 방향 설정) ...
+    SHD_PORT_SetPinMux(PIN_LED1, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_LED2, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_LED4, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_LED5, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_LED6, PORT_MUX_GPIO);
 
+    SHD_PORT_SetPinMux(PIN_FND_DATA1, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_FND_DATA2, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_FND_DATA3, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_FND_DATA4, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_FND_DATA5, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_FND_DATA6, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_FND_DATA7, PORT_MUX_GPIO);
+
+    SHD_PORT_SetPinMux(PIN_FND_SEL1, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_FND_SEL2, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_FND_SEL3, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_FND_SEL4, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_FND_SEL5, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_FND_SEL6, PORT_MUX_GPIO);
+
+    SHD_PORT_SetPinMux(PIN_PEIZO, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_BUZZER, PORT_MUX_GPIO);
+
+    SHD_PORT_SetPinMux(PIN_DC_MOTOR, PORT_MUX_GPIO);
+
+    SHD_PORT_SetPinMux(PIN_STEP_MOTOR1, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_STEP_MOTOR2, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_STEP_MOTOR3, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_STEP_MOTOR4, PORT_MUX_GPIO);
+
+    SHD_PORT_SetPinMux(PIN_RELAY, PORT_MUX_GPIO);
+
+    /* 4. 각 주변장치 드라이버 초기화 및 GPIO 방향 설정 */
+    // GPIO 입력 핀 초기화
+    SHD_GPIO_InitPin(PIN_UWAVE_SENSOR, GPIO_INPUT);
+    SHD_GPIO_InitPin(PIN_BTN1, GPIO_INPUT);
+    SHD_GPIO_InitPin(PIN_BTN2, GPIO_INPUT);
+    SHD_GPIO_InitPin(PIN_BTN3, GPIO_INPUT);
+    SHD_GPIO_InitPin(PIN_BTN4, GPIO_INPUT);
+
+    // GPIO 출력 핀 초기화
+    SHD_GPIO_InitPin(PIN_LED_RED, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_LED_GREEN, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_LED_BLUE, GPIO_OUTPUT);
+
+    SHD_GPIO_InitPin(PIN_LED1, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_LED2, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_LED4, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_LED5, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_LED6, GPIO_OUTPUT);
+
+    SHD_GPIO_InitPin(PIN_FND_DATA1, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_FND_DATA2, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_FND_DATA3, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_FND_DATA4, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_FND_DATA5, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_FND_DATA6, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_FND_DATA7, GPIO_OUTPUT);
+
+    SHD_GPIO_InitPin(PIN_FND_SEL1, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_FND_SEL2, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_FND_SEL3, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_FND_SEL4, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_FND_SEL5, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_FND_SEL6, GPIO_OUTPUT);
+
+    SHD_GPIO_InitPin(PIN_PEIZO, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_BUZZER, GPIO_OUTPUT);
+
+    SHD_GPIO_InitPin(PIN_DC_MOTOR, GPIO_OUTPUT);
+
+    SHD_GPIO_InitPin(PIN_STEP_MOTOR1, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_STEP_MOTOR2, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_STEP_MOTOR3, GPIO_OUTPUT);
+    SHD_GPIO_InitPin(PIN_STEP_MOTOR4, GPIO_OUTPUT);
+
+    SHD_GPIO_InitPin(PIN_RELAY, GPIO_OUTPUT);
+
+    // // 나머지 드라이버 초기화
     // SHD_ADC0_Init();
     // SHD_FTM0_Init();
-    // SHD_FTM0_InitPwmChannel(1); // LED 8 (FTM0_CH1)
-    // SHD_FTM0_InitPwmChannel(2); // Servo (FTM0_CH2)
-
+    // SHD_FTM0_InitPwmChannel(1); // FTM0_CH1 (LED 8)
+    // SHD_FTM0_InitPwmChannel(2); // FTM0_CH2 (Servo)
     // SHD_LPI2C0_Init();
     // SHD_CAN0_Init();
     // SHD_LPIT_Init();
-    // SHD_LPUART1_Init(115200); // 115200 Baudrate로 초기화
+    // SHD_LPUART1_Init(115200);
 
-    // /* 5. 인터럽트 활성화 (모든 설정이 끝난 후 마지막에 수행) */
-    // SHD_IT_EnableIRQ(PORTE_IRQn); // 버튼 인터럽트 예시
-    // SHD_IT_SetPriority(PORTE_IRQn, 5); // 우선순위 5로 설정
+    // /* 5. 인터럽트 설정 및 활성화 (모든 설정이 끝난 후) */
+    // // 핀 인터럽트 설정
+    // SHD_PORT_SetPinIT(PIN_UWAVE_SENSOR, PORT_IT_RISING_EDGE);
+    // SHD_PORT_SetPinIT(PIN_BTN_1, PORT_IT_FALLING_EDGE);
+    // SHD_PORT_SetPinIT(PIN_BTN_2, PORT_IT_FALLING_EDGE);
+    // SHD_PORT_SetPinIT(PIN_BTN_3, PORT_IT_FALLING_EDGE);
+    // SHD_PORT_SetPinIT(PIN_BTN_4, PORT_IT_FALLING_EDGE);
+
+    // // NVIC 인터럽트 활성화 및 우선순위 설정
+    // SHD_IT_EnableIRQ(PORTC_IRQn); // uWave 센서(PTC12) 및 기타 PORTC 핀들
+    // SHD_IT_SetPriority(PORTC_IRQn, 5);
+
+    // SHD_IT_EnableIRQ(PORTE_IRQn); // 버튼(PTE13-16)
+    // SHD_IT_SetPriority(PORTE_IRQn, 10);
+
+    // SHD_IT_EnableIRQ(CAN0_ORed_0_15_MB_IRQn); // CAN0 수신
+    // SHD_IT_SetPriority(CAN0_ORed_0_15_MB_IRQn, 5);
+
+    // SHD_IT_EnableIRQ(LPIT0_Ch0_IRQn); // 1초 주기 타이머
+    // SHD_IT_SetPriority(LPIT0_Ch0_IRQn, 12);
     // // ... (사용할 모든 인터럽트에 대해 Enable 및 Priority 설정) ...
 }

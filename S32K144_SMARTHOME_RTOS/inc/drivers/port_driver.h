@@ -42,8 +42,8 @@ typedef enum {
 
 
 void SHD_PORT_Init(void);
-void SHD_PORT_SetPinMux(PORT_Type *port, uint32_t pin, port_mux_t mux);
-void SHD_PORT_SetPinIT(PORT_Type *port, uint32_t pin, port_it_t it_config);
+void SHD_PORT_SetPinMux(port_pin_t pin_info, port_mux_t mux);
+void SHD_PORT_SetPinIT(port_pin_t pin_info, port_it_t it_config);
 
 
 #endif /* PORT_DRIVER_H */

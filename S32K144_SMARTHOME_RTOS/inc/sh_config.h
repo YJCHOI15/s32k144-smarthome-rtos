@@ -27,6 +27,10 @@
 #define PIN_FTM0_CH1_LED8                ((port_pin_t){PORT_C, 1})
 #define PIN_FTM0_CH2_SERVO               ((port_pin_t){PORT_C, 2})
 
+#define PIN_LED_RED                      ((port_pin_t){PORT_D, 15})
+#define PIN_LED_GREEN                    ((port_pin_t){PORT_D, 16})
+#define PIN_LED_BLUE                     ((port_pin_t){PORT_D, 0})
+
 #define PIN_LED1                         ((port_pin_t){PORT_D, 3})
 #define PIN_LED2                         ((port_pin_t){PORT_D, 5})
 #define PIN_LED4                         ((port_pin_t){PORT_D, 10})
