@@ -28,8 +28,7 @@ void SHD_GPIO_WritePin(port_pin_t pin_info, uint8_t value) {
     GPIO_Type* gpio = g_gpio_bases[pin_info.port];
     uint32_t pin = pin_info.pin;
 
-    if (value)
-    {
+    if (value) {
         gpio->PSOR = (1UL << pin);
     } else {
         gpio->PCOR = (1UL << pin);
