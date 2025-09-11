@@ -32,7 +32,8 @@ void SHH_Init(void)
     SHD_PORT_SetPinMux(PIN_ADC_CDS, PORT_MUX_ANALOG);
     SHD_PORT_SetPinMux(PIN_ADC_VR, PORT_MUX_ANALOG);
 
-    SHD_PORT_SetPinMux(PIN_UWAVE_SENSOR, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_UWAVE_TRIG, PORT_MUX_GPIO);
+    SHD_PORT_SetPinMux(PIN_UWAVE_ECHO, PORT_MUX_GPIO);
 
     SHD_PORT_SetPinMux(PIN_BTN1, PORT_MUX_GPIO);
     SHD_PORT_SetPinMux(PIN_BTN2, PORT_MUX_GPIO);
@@ -81,13 +82,14 @@ void SHH_Init(void)
 
     /* 4. 각 주변장치 드라이버 초기화 및 GPIO 방향 설정 */
     // GPIO 입력 핀 초기화
-    SHD_GPIO_InitPin(PIN_UWAVE_SENSOR, GPIO_INPUT);
+    SHD_GPIO_InitPin(PIN_UWAVE_ECHO, GPIO_INPUT);
     SHD_GPIO_InitPin(PIN_BTN1, GPIO_INPUT);
     SHD_GPIO_InitPin(PIN_BTN2, GPIO_INPUT);
     SHD_GPIO_InitPin(PIN_BTN3, GPIO_INPUT);
     SHD_GPIO_InitPin(PIN_BTN4, GPIO_INPUT);
 
     // GPIO 출력 핀 초기화
+    SHD_GPIO_InitPin(PIN_UWAVE_TRIG, GPIO_OUTPUT);
     SHD_GPIO_InitPin(PIN_LED_RED, GPIO_OUTPUT);
     SHD_GPIO_InitPin(PIN_LED_GREEN, GPIO_OUTPUT);
     SHD_GPIO_InitPin(PIN_LED_BLUE, GPIO_OUTPUT);
@@ -125,23 +127,23 @@ void SHH_Init(void)
 
     SHD_GPIO_InitPin(PIN_RELAY, GPIO_OUTPUT);
 
-    // // 나머지 드라이버 초기화
-    // SHD_ADC0_Init();
-    // SHD_FTM0_Init();
-    // SHD_FTM0_InitPwmChannel(1); // FTM0_CH1 (LED 8)
-    // SHD_FTM0_InitPwmChannel(2); // FTM0_CH2 (Servo)
-    // SHD_LPI2C0_Init();
-    // SHD_CAN0_Init();
-    // SHD_LPIT_Init();
-    // SHD_LPUART1_Init(115200);
+    // 나머지 드라이버 초기화
+    SHD_ADC0_Init();
+    SHD_FTM0_Init();
+    SHD_FTM0_InitPwmChannel(1); // FTM0_CH1 (LED 8)
+    SHD_FTM0_InitPwmChannel(2); // FTM0_CH2 (Servo)
+    SHD_LPI2C0_Init();
+    SHD_CAN0_Init();
+    SHD_LPIT0_Init();
+    SHD_LPUART1_Init(115200);
 
-    // /* 5. 인터럽트 설정 및 활성화 (모든 설정이 끝난 후) */
+    // /* 5. 인터럽트 설정 및 활성화 */
     // // 핀 인터럽트 설정
-    // SHD_PORT_SetPinIT(PIN_UWAVE_SENSOR, PORT_IT_RISING_EDGE);
-    // SHD_PORT_SetPinIT(PIN_BTN_1, PORT_IT_FALLING_EDGE);
-    // SHD_PORT_SetPinIT(PIN_BTN_2, PORT_IT_FALLING_EDGE);
-    // SHD_PORT_SetPinIT(PIN_BTN_3, PORT_IT_FALLING_EDGE);
-    // SHD_PORT_SetPinIT(PIN_BTN_4, PORT_IT_FALLING_EDGE);
+    // SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_RISING_EDGE);
+    // SHD_PORT_SetPinIT(PIN_BTN1, PORT_IT_FALLING_EDGE);
+    // SHD_PORT_SetPinIT(PIN_BTN2, PORT_IT_FALLING_EDGE);
+    // SHD_PORT_SetPinIT(PIN_BTN3, PORT_IT_FALLING_EDGE);
+    // SHD_PORT_SetPinIT(PIN_BTN4, PORT_IT_FALLING_EDGE);
 
     // // NVIC 인터럽트 활성화 및 우선순위 설정
     // SHD_IT_EnableIRQ(PORTC_IRQn); // uWave 센서(PTC12) 및 기타 PORTC 핀들

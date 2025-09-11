@@ -17,7 +17,8 @@
 #define PIN_ADC_CDS                      ((port_pin_t){PORT_B, 0})
 #define PIN_ADC_VR                       ((port_pin_t){PORT_B, 1})
 
-#define PIN_UWAVE_SENSOR                 ((port_pin_t){PORT_C, 12})
+#define PIN_UWAVE_TRIG                   ((port_pin_t){PORT_C, 12})
+#define PIN_UWAVE_ECHO                   ((port_pin_t){PORT_C, 13})
 
 #define PIN_BTN1                         ((port_pin_t){PORT_E, 13})
 #define PIN_BTN2                         ((port_pin_t){PORT_E, 14})
