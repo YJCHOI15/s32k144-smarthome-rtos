@@ -38,13 +38,13 @@
 #define PIN_LED5                         ((port_pin_t){PORT_D, 11})
 #define PIN_LED6                         ((port_pin_t){PORT_D, 12})
 
-#define PIN_FND_DATA1                    ((port_pin_t){PORT_B, 8})
-#define PIN_FND_DATA2                    ((port_pin_t){PORT_B, 9})
-#define PIN_FND_DATA3                    ((port_pin_t){PORT_B, 10})
-#define PIN_FND_DATA4                    ((port_pin_t){PORT_B, 11})
-#define PIN_FND_DATA5                    ((port_pin_t){PORT_C, 3})
-#define PIN_FND_DATA6                    ((port_pin_t){PORT_C, 10})
-#define PIN_FND_DATA7                    ((port_pin_t){PORT_C, 11})
+#define PIN_FND_DATA_A                   ((port_pin_t){PORT_B, 8})
+#define PIN_FND_DATA_B                   ((port_pin_t){PORT_B, 9})
+#define PIN_FND_DATA_C                   ((port_pin_t){PORT_B, 10})
+#define PIN_FND_DATA_D                   ((port_pin_t){PORT_B, 11})
+#define PIN_FND_DATA_E                   ((port_pin_t){PORT_C, 3})
+#define PIN_FND_DATA_F                   ((port_pin_t){PORT_C, 10})
+#define PIN_FND_DATA_G                   ((port_pin_t){PORT_C, 11})
 
 #define PIN_FND_SEL1                     ((port_pin_t){PORT_B, 2})
 #define PIN_FND_SEL2                     ((port_pin_t){PORT_B, 3})
@@ -85,8 +85,8 @@ typedef struct {
 
 /* Sensor Data Queue를 통해 전달될 메시지 구조체 */
 typedef struct {
-    float temperature;
-    float humidity;
+    uint8_t temperature;
+    uint8_t humidity;
     uint16_t cds_raw; // 0-4095
     uint16_t vr_raw;  // 0-4095
 } sensor_data_t;
@@ -110,7 +110,6 @@ typedef struct {
 #define SENSOR_OLED_ADDR 0x3C    // 또는 0x3D
 
 /**************** RTOS & Application Configuration ****************/
-// (이곳에 큐 사이즈, 태스크 우선순위 등 다른 설정값들도 정의할 수 있습니다)
 
 
 #endif /* SH_CONFIG_H */
