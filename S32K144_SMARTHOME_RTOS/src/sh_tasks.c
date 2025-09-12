@@ -11,6 +11,7 @@
 #include "drivers/gpio_driver.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 /************************ RTOS 객체 핸들러 정의 *******************/
 QueueHandle_t g_command_queue;
@@ -169,6 +170,21 @@ void SH_ButtonInput_Task(void *pvParameters) {
     }
 }
 
+void PORTE_IRQHandler(void) {
+
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // 인터럽트가 발생했음을 ButtonInput_Task에 알린다 (세마포어 전달).
+    xSemaphoreGiveFromISR(g_button_interrupt_semaphore, &xHigherPriorityTaskWoken);
+
+    // 발생한 모든 핀의 인터럽트 플래그를 클리어한다.
+    PORTE->ISFR = 0xFFFFFFFF;
+
+    // 만약 세마포어 전달로 인해 더 높은 우선순위의 태스크가 깨어났다면,
+    // 즉시 컨텍스트 스위칭을 요청한다.
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
 /********************************************************************/
 /**************************** CanCommTask ***************************/
 /********************************************************************/
@@ -181,8 +197,26 @@ void SH_CanComm_Task(void *pvParameters) {
 /**************************** DisplayTask ***************************/
 /********************************************************************/
 void SH_Display_Task(void *pvParameters) {
+
     (void)pvParameters;
-    for(;;); 
+    display_data_t received_data;
+
+    for (;;) {
+        // 1. Display Data Queue에 메시지가 들어올 때까지 4ms 동안 대기한다.
+        //    메시지가 없더라도 FND 스캔을 위해 주기적으로 깨어난다.
+        if (xQueueReceive(g_display_data_queue, &received_data, pdMS_TO_TICKS(4)) == pdTRUE) {
+            // 2. 메시지를 수신
+            // FND 업데이트
+            uint32_t fnd_number = (uint32_t)atoi(received_data.fnd_string);
+            SHH_FND_NumberParsing(fnd_number);
+
+            // OLED 업데이트 (이전 내용 덮어쓰기)
+            SHH_OLED_PrintString(0, 0, received_data.oled_string);
+        }
+
+        // 3. 루프를 돌 때마다 FND의 한 자릿수를 스캔하여 잔상 효과를 만든다.
+        SHH_FND_Display();
+    }
 }
 
 /********************************************************************/
