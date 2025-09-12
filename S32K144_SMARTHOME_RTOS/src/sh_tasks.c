@@ -7,7 +7,8 @@
 #include "shh_sensor.h"
 #include "shh_sound.h"
 #include "shh_system.h"
-#include "lpit_driver.h"
+#include "drivers/lpit_driver.h"
+#include "drivers/gpio_driver.h"
 
 #include <stdio.h>
 
@@ -16,6 +17,7 @@ QueueHandle_t g_command_queue;
 QueueHandle_t g_sensor_data_queue;
 QueueHandle_t g_display_data_queue;
 SemaphoreHandle_t g_system_status_mutex;
+SemaphoreHandle_t g_button_interrupt_semaphore;
 EventGroupHandle_t g_security_event_group;
 
 /************************** 전역 변수 정의 ************************/
@@ -130,8 +132,41 @@ void SH_Sensor_Task(void *pvParameters) {
 /************************ ButtonInputTask ***************************/
 /********************************************************************/
 void SH_ButtonInput_Task(void *pvParameters) {
+
     (void)pvParameters;
-    for(;;); 
+    command_msg_t cmd_msg;
+
+    for (;;) {
+        // 1. 버튼 인터럽트가 발생할 때까지 Blocked
+        if (xSemaphoreTake(g_button_interrupt_semaphore, portMAX_DELAY) == pdTRUE) {
+            // 2. 채터링 방지를 위한 대기
+            vTaskDelay(pdMS_TO_TICKS(50));
+
+            // 3. 어떤 버튼이 눌렸는지 확인하고, 해당하는 명령을 생성합니다.
+            if (SHD_GPIO_ReadPin(PIN_BTN1) == 0) {
+                cmd_msg.command_id = CMD_BTN1_CYCLE_MODE;
+                xQueueSend(g_command_queue, &cmd_msg, 0);
+                SHH_Piezo_Beep();
+                // 버튼이 떼어질 때까지 기다려 다중 입력을 방지
+                while(SHD_GPIO_ReadPin(PIN_BTN1) == 0) { vTaskDelay(pdMS_TO_TICKS(20)); }
+            } else if (SHD_GPIO_ReadPin(PIN_BTN2) == 0) {
+                cmd_msg.command_id = CMD_BTN2_SELECT_DEVICE;
+                xQueueSend(g_command_queue, &cmd_msg, 0);
+                SHH_Piezo_Beep();
+                while(SHD_GPIO_ReadPin(PIN_BTN2) == 0) { vTaskDelay(pdMS_TO_TICKS(20)); }
+            } else if (SHD_GPIO_ReadPin(PIN_BTN3) == 0) {
+                cmd_msg.command_id = CMD_BTN3_DEVICE_ACTION_POSITIVE;
+                xQueueSend(g_command_queue, &cmd_msg, 0);
+                SHH_Piezo_Beep();
+                while(SHD_GPIO_ReadPin(PIN_BTN3) == 0) { vTaskDelay(pdMS_TO_TICKS(20)); }
+            } else if (SHD_GPIO_ReadPin(PIN_BTN4) == 0) {
+                cmd_msg.command_id = CMD_BTN4_DEVICE_ACTION_NEGATIVE;
+                xQueueSend(g_command_queue, &cmd_msg, 0);
+                SHH_Piezo_Beep();
+                while(SHD_GPIO_ReadPin(PIN_BTN4) == 0) { vTaskDelay(pdMS_TO_TICKS(20)); }
+            }
+        }
+    }
 }
 
 /********************************************************************/

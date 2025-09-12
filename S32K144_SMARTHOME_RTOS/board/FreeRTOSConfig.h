@@ -110,7 +110,7 @@ PRIORITY THAN THIS! (higher priorities are lower numeric values. */
 
 /* QUEUE */
 #define configQUEUE_REGISTRY_SIZE                   2
-#define configUSE_QUEUE_SETS                        0
+#define configUSE_QUEUE_SETS                        1
 
 /* Optional functions - most linkers will remove unused functions anyway. */
 #define INCLUDE_vTaskPrioritySet                    1

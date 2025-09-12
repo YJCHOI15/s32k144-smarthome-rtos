@@ -21,22 +21,24 @@
 
 int main(void)
 {
-    // 1. 모든 하드웨어 드라이버를 '사용 가능한 상태'로 만듭니다.
+    /* 모든 하드웨어 드라이버 초기화 */
     SHH_Init();
 
-    // // 2. 애플리케이션에서 사용할 RTOS 객체들을 생성합니다.
-    // Create_Application_RTOS_Objects(); // 큐, 세마포어 등 생성
+    /* RTOS 객체 생성 */
+    g_command_queue = xQueueCreate(10, sizeof(command_msg_t));
+    g_sensor_data_queue = xQueueCreate(1, sizeof(sensor_data_t));
+    g_display_data_queue = xQueueCreate(1, sizeof(display_data_t));
+    g_system_status_mutex = xSemaphoreCreateMutex();
+    g_security_event_group = xEventGroupCreate();
+    g_button_interrupt_semaphore = xSemaphoreCreateBinary();
 
-    // // 3. 애플리케이션 태스크들을 생성합니다.
-    // Create_Application_Tasks(); // SH_Sensor_Task 등 생성
+    /* RTOS 태스크 생성 */
+    xTaskCreate(SH_MainControl_Task, "MainCtrl", 512, NULL, 5, NULL);
+    xTaskCreate(SH_Sensor_Task, "Sensor", 256, NULL, 4, NULL);
+    xTaskCreate(SH_ButtonInput_Task, "Button", 256, NULL, 6, NULL);
 
-    // // 4. 애플리케이션의 '목적'에 맞게 타이머를 설정합니다.
-    // SHD_LPIT_SetPeriodic(0, 1000, 초음파 수신 콜백);
-    // SHD_LPIT_SetPeriodic(1, 500, CAN 수신 콜백);
-    // SHD_LPIT_SetPeriodic(1, 2000, 보안대기 LED 콜백);
-
-    // // 5. RTOS 스케줄러를 시작하여 모든 태스크를 동작시킵니다.
-    // vTaskStartScheduler();
+    /* RTOS 스케줄러 시작 */
+    vTaskStartScheduler();
 
     for(;;);
     return 0;
