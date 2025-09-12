@@ -1,9 +1,8 @@
 #include "shh_sensor.h"
+#include "sh_config.h"
 #include "drivers/gpio_driver.h"
 #include "drivers/adc_driver.h"
 #include "drivers/lpit_driver.h"
-#include "sh_config.h"
-#include <stdbool.h>
 
 
 /**

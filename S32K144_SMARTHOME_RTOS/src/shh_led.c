@@ -1,7 +1,7 @@
 #include "shh_led.h"
+#include "sh_config.h"
 #include "drivers/gpio_driver.h"
 #include "drivers/ftm_driver.h"
-#include "sh_config.h"
 
 void SHH_PowerLED_On(void) {
     SHD_GPIO_WritePin(PIN_LED1, 0); 

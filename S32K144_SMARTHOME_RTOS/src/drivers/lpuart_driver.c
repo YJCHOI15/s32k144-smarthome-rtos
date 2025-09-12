@@ -1,4 +1,4 @@
-#include "lpuart_driver.h"
+#include "drivers/lpuart_driver.h"
 
 #define LPUART1_CLK_FREQ 8000000UL // LPUART1에 공급되는 클럭 소스 (SOSCDIV2_CLK @ 8MHz)
 

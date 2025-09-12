@@ -1,4 +1,4 @@
-#include "ftm_driver.h"
+#include "drivers/ftm_driver.h"
 
 /* 50Hz PWM 주기를 위한 MOD 값 (SPLLDIV1 80MHz 기준) */
 #define FTM0_MOD_VALUE (12499)

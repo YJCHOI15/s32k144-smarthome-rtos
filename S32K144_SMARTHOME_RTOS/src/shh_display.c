@@ -28,10 +28,10 @@ static const uint8_t g_fnd_patterns[10] = {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-static const port_pin_t g_fnd_data_pins[7] = {
+static const sh_port_pin_t g_fnd_data_pins[7] = {
     PIN_FND_DATA_A, PIN_FND_DATA_B, PIN_FND_DATA_C, PIN_FND_DATA_D, PIN_FND_DATA_E, PIN_FND_DATA_F, PIN_FND_DATA_G
 };
-static const port_pin_t g_fnd_sel_pins[6] = {
+static const sh_port_pin_t g_fnd_sel_pins[6] = {
     PIN_FND_SEL1, PIN_FND_SEL2, PIN_FND_SEL3, PIN_FND_SEL4, PIN_FND_SEL5, PIN_FND_SEL6
 };
 #pragma GCC diagnostic pop

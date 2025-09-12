@@ -1,71 +1,78 @@
 #ifndef SH_CONFIG_H
 #define SH_CONFIG_H
 
+#include <FreeRTOS.h>
+#include <queue.h>
+#include <semphr.h>
+#include <event_groups.h>
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "drivers/port_driver.h"
-#include "sh_tasks.h"
+
 
 /********************** Pin Mapping *************************/
-#define PIN_LPUART1_RX                   ((port_pin_t){PORT_C, 6})
-#define PIN_LPUART1_TX                   ((port_pin_t){PORT_C, 7})
+#define PIN_LPUART1_RX                   ((sh_port_pin_t){PORT_C, 6})
+#define PIN_LPUART1_TX                   ((sh_port_pin_t){PORT_C, 7})
 
-#define PIN_CAN0_RX                      ((port_pin_t){PORT_E, 4})
-#define PIN_CAN0_TX                      ((port_pin_t){PORT_E, 5})
+#define PIN_CAN0_RX                      ((sh_port_pin_t){PORT_E, 4})
+#define PIN_CAN0_TX                      ((sh_port_pin_t){PORT_E, 5})
 
-#define PIN_LPI2C0_SDA                   ((port_pin_t){PORT_A, 2})
-#define PIN_LPI2C0_SCL                   ((port_pin_t){PORT_A, 3})
+#define PIN_LPI2C0_SDA                   ((sh_port_pin_t){PORT_A, 2})
+#define PIN_LPI2C0_SCL                   ((sh_port_pin_t){PORT_A, 3})
 
-#define PIN_ADC0_SE4_CDS                 ((port_pin_t){PORT_B, 0})
-#define PIN_ADC0_SE5_VR                  ((port_pin_t){PORT_B, 1})
+#define PIN_ADC0_SE4_CDS                 ((sh_port_pin_t){PORT_B, 0})
+#define PIN_ADC0_SE5_VR                  ((sh_port_pin_t){PORT_B, 1})
 
-#define PIN_UWAVE_TRIG                   ((port_pin_t){PORT_C, 12})
-#define PIN_UWAVE_ECHO                   ((port_pin_t){PORT_C, 13})
+#define PIN_UWAVE_TRIG                   ((sh_port_pin_t){PORT_C, 12})
+#define PIN_UWAVE_ECHO                   ((sh_port_pin_t){PORT_C, 13})
 
-#define PIN_BTN1                         ((port_pin_t){PORT_E, 13})
-#define PIN_BTN2                         ((port_pin_t){PORT_E, 14})
-#define PIN_BTN3                         ((port_pin_t){PORT_E, 15})
-#define PIN_BTN4                         ((port_pin_t){PORT_E, 16})
+#define PIN_BTN1                         ((sh_port_pin_t){PORT_E, 13})
+#define PIN_BTN2                         ((sh_port_pin_t){PORT_E, 14})
+#define PIN_BTN3                         ((sh_port_pin_t){PORT_E, 15})
+#define PIN_BTN4                         ((sh_port_pin_t){PORT_E, 16})
 
-#define PIN_FTM0_CH1_LED8                ((port_pin_t){PORT_C, 1})
-#define PIN_FTM0_CH2_SERVO               ((port_pin_t){PORT_C, 2})
+#define PIN_FTM0_CH1_LED8                ((sh_port_pin_t){PORT_C, 1})
+#define PIN_FTM0_CH2_SERVO               ((sh_port_pin_t){PORT_C, 2})
 
-#define PIN_LED_RED                      ((port_pin_t){PORT_D, 15})
-#define PIN_LED_GREEN                    ((port_pin_t){PORT_D, 16})
-#define PIN_LED_BLUE                     ((port_pin_t){PORT_D, 0})
+#define PIN_LED_RED                      ((sh_port_pin_t){PORT_D, 15})
+#define PIN_LED_GREEN                    ((sh_port_pin_t){PORT_D, 16})
+#define PIN_LED_BLUE                     ((sh_port_pin_t){PORT_D, 0})
 
-#define PIN_LED1                         ((port_pin_t){PORT_D, 3})
-#define PIN_LED2                         ((port_pin_t){PORT_D, 5})
-#define PIN_LED4                         ((port_pin_t){PORT_D, 10})
-#define PIN_LED5                         ((port_pin_t){PORT_D, 11})
-#define PIN_LED6                         ((port_pin_t){PORT_D, 12})
+#define PIN_LED1                         ((sh_port_pin_t){PORT_D, 3})
+#define PIN_LED2                         ((sh_port_pin_t){PORT_D, 5})
+#define PIN_LED4                         ((sh_port_pin_t){PORT_D, 10})
+#define PIN_LED5                         ((sh_port_pin_t){PORT_D, 11})
+#define PIN_LED6                         ((sh_port_pin_t){PORT_D, 12})
 
-#define PIN_FND_DATA_A                   ((port_pin_t){PORT_B, 8})
-#define PIN_FND_DATA_B                   ((port_pin_t){PORT_B, 9})
-#define PIN_FND_DATA_C                   ((port_pin_t){PORT_B, 10})
-#define PIN_FND_DATA_D                   ((port_pin_t){PORT_B, 11})
-#define PIN_FND_DATA_E                   ((port_pin_t){PORT_C, 3})
-#define PIN_FND_DATA_F                   ((port_pin_t){PORT_C, 10})
-#define PIN_FND_DATA_G                   ((port_pin_t){PORT_C, 11})
+#define PIN_FND_DATA_A                   ((sh_port_pin_t){PORT_B, 8})
+#define PIN_FND_DATA_B                   ((sh_port_pin_t){PORT_B, 9})
+#define PIN_FND_DATA_C                   ((sh_port_pin_t){PORT_B, 10})
+#define PIN_FND_DATA_D                   ((sh_port_pin_t){PORT_B, 11})
+#define PIN_FND_DATA_E                   ((sh_port_pin_t){PORT_C, 3})
+#define PIN_FND_DATA_F                   ((sh_port_pin_t){PORT_C, 10})
+#define PIN_FND_DATA_G                   ((sh_port_pin_t){PORT_C, 11})
 
-#define PIN_FND_SEL1                     ((port_pin_t){PORT_B, 2})
-#define PIN_FND_SEL2                     ((port_pin_t){PORT_B, 3})
-#define PIN_FND_SEL3                     ((port_pin_t){PORT_B, 4})
-#define PIN_FND_SEL4                     ((port_pin_t){PORT_B, 5})
-#define PIN_FND_SEL5                     ((port_pin_t){PORT_D, 13})
-#define PIN_FND_SEL6                     ((port_pin_t){PORT_D, 14})
+#define PIN_FND_SEL1                     ((sh_port_pin_t){PORT_B, 2})
+#define PIN_FND_SEL2                     ((sh_port_pin_t){PORT_B, 3})
+#define PIN_FND_SEL3                     ((sh_port_pin_t){PORT_B, 4})
+#define PIN_FND_SEL4                     ((sh_port_pin_t){PORT_B, 5})
+#define PIN_FND_SEL5                     ((sh_port_pin_t){PORT_D, 13})
+#define PIN_FND_SEL6                     ((sh_port_pin_t){PORT_D, 14})
 
-#define PIN_PIEZO                        ((port_pin_t){PORT_C, 8})
-#define PIN_BUZZER                       ((port_pin_t){PORT_C, 9})
+#define PIN_PIEZO                        ((sh_port_pin_t){PORT_C, 8})
+#define PIN_BUZZER                       ((sh_port_pin_t){PORT_C, 9})
 
-#define PIN_DC_MOTOR                     ((port_pin_t){PORT_D, 8})
+#define PIN_DC_MOTOR                     ((sh_port_pin_t){PORT_D, 8})
 
-#define PIN_STEP_MOTOR1                  ((port_pin_t){PORT_B, 14})
-#define PIN_STEP_MOTOR2                  ((port_pin_t){PORT_B, 15})
-#define PIN_STEP_MOTOR3                  ((port_pin_t){PORT_B, 16})
-#define PIN_STEP_MOTOR4                  ((port_pin_t){PORT_B, 17})
+#define PIN_STEP_MOTOR1                  ((sh_port_pin_t){PORT_B, 14})
+#define PIN_STEP_MOTOR2                  ((sh_port_pin_t){PORT_B, 15})
+#define PIN_STEP_MOTOR3                  ((sh_port_pin_t){PORT_B, 16})
+#define PIN_STEP_MOTOR4                  ((sh_port_pin_t){PORT_B, 17})
 
-#define PIN_RELAY                        ((port_pin_t){PORT_D, 9})
+#define PIN_RELAY                        ((sh_port_pin_t){PORT_D, 9})
 
-#define PIN_TEMP_HUMI                    ((port_pin_t){PORT_D, 6})
+#define PIN_TEMP_HUMI                    ((sh_port_pin_t){PORT_D, 6})
 
 
 /**************** SmartHome Data Structure *****************/
@@ -106,7 +113,7 @@ typedef struct {
 /********************* I2C Slave Adddress ******************/
 #define SSD1306_OLED_ADDR 0x3C    // 또는 0x3D
 
-/***************** RTOS Object Handler **********************/
+/********************* RTOS Object Handler ******************/
 extern QueueHandle_t g_command_queue;
 extern QueueHandle_t g_sensor_data_queue;
 extern QueueHandle_t g_display_data_queue;

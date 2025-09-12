@@ -14,6 +14,8 @@
 
 /* Including necessary configuration files. */
 #include "sdk_project_config.h"
+
+#include "sh_config.h"
 #include "shh_system.h"
 #include "sh_tasks.h"
 

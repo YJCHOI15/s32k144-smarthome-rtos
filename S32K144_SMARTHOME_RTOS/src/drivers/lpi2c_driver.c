@@ -1,4 +1,4 @@
-#include "lpi2c_driver.h"
+#include "drivers/lpi2c_driver.h"
 
 #define LPI2C_TIMEOUT 1000
 

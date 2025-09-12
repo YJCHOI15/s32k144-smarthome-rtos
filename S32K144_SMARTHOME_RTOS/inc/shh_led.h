@@ -2,7 +2,7 @@
 #define SHH_LED_H
 
 #include "sh_config.h"
-#include <stdint.h>
+
 
 /* 전원 LED 제어 */
 void SHH_PowerLED_On(void);

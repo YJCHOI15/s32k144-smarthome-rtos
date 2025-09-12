@@ -1,6 +1,6 @@
 #include "shh_sound.h"
-#include "drivers/gpio_driver.h"
 #include "sh_config.h"
+#include "drivers/gpio_driver.h"
 
 void SHH_Buzzer_StartAlarm(void) {
     SHD_GPIO_WritePin(PIN_BUZZER, 1);

@@ -10,23 +10,23 @@ typedef enum {
     PORT_C,
     PORT_D,
     PORT_E
-} port_name_t;
+} sh_port_name_t;
 
 typedef struct {
-    port_name_t port;
+    sh_port_name_t port;
     uint8_t pin;
-} port_pin_t;
+} sh_port_pin_t;
 
 typedef enum {
-    PORT_MUX_ANALOG = 0,
-    PORT_MUX_GPIO   = 1,
-    PORT_MUX_ALT2   = 2,
-    PORT_MUX_ALT3   = 3,
-    PORT_MUX_ALT4   = 4,
-    PORT_MUX_ALT5   = 5,
-    PORT_MUX_ALT6   = 6,
-    PORT_MUX_ALT7   = 7
-} port_mux_t;
+    PORT_MUX_ANALOG  = 0,
+    PORT_MUX_GPIO    = 1,
+    PORT_MUX_ALT_2   = 2,
+    PORT_MUX_ALT_3   = 3,
+    PORT_MUX_ALT_4   = 4,
+    PORT_MUX_ALT_5   = 5,
+    PORT_MUX_ALT_6   = 6,
+    PORT_MUX_ALT_7   = 7
+} sh_port_mux_t;
 
 typedef enum {
     PORT_IT_DISABLED    = 0,  // Interrupt/DMA disabled
@@ -38,12 +38,12 @@ typedef enum {
     PORT_IT_IRQ_FALLING = 10, // Interrupt on falling edge
     PORT_IT_IRQ_EITHER  = 11, // Interrupt on either edge
     PORT_IT_IRQ_LOGIC_1 = 12  // Interrupt when logic 1
-} port_it_t;
+} sh_port_it_t;
 
 
 void SHD_PORT_Init(void);
-void SHD_PORT_SetPinMux(port_pin_t pin_info, port_mux_t mux);
-void SHD_PORT_SetPinIT(port_pin_t pin_info, port_it_t it_config);
+void SHD_PORT_SetPinMux(sh_port_pin_t pin_info, sh_port_mux_t mux);
+void SHD_PORT_SetPinIT(sh_port_pin_t pin_info, sh_port_it_t it_config);
 
 
 #endif /* PORT_DRIVER_H */

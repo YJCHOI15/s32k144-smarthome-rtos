@@ -1,4 +1,5 @@
-#include "system_init.h"
+#include "drivers/system_init.h"
+#include "S32K144.h"
 
 /* system_init.c에서만 사용 */
 static void SOSC_init_8MHz(void);

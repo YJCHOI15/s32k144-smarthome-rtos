@@ -1,4 +1,4 @@
-#include "lpit_driver.h"
+#include "drivers/lpit_driver.h"
 #include <stddef.h> 
 
 /* 각 타이머 채널의 콜백 함수를 저장하기 위한 정적 배열 */

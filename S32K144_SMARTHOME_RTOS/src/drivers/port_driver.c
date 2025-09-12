@@ -1,4 +1,4 @@
-#include "port_driver.h"
+#include "drivers/port_driver.h"
 
 static PORT_Type * const g_port_bases[] = {PORTA, PORTB, PORTC, PORTD, PORTE};
 
@@ -21,7 +21,7 @@ void SHD_PORT_Init(void) {
  * 지정된 핀의 기능을 설정한다.
  * 각 핀의 PCR(Pin Control Register)의 MUX 필드를 변경하여 핀의 역할을 결정한다.
  */
-void SHD_PORT_SetPinMux(port_pin_t pin_info, port_mux_t mux) {
+void SHD_PORT_SetPinMux(sh_port_pin_t pin_info, sh_port_mux_t mux) {
 
     PORT_Type* port = g_port_bases[pin_info.port];
     uint8_t pin = pin_info.pin;
@@ -35,7 +35,7 @@ void SHD_PORT_SetPinMux(port_pin_t pin_info, port_mux_t mux) {
  * 각 핀의 PCR(Pin Control Register)의 IRQC 필드를 변경하여
  * 인터럽트 발생 조건을 결정한다.
  */
-void SHD_PORT_SetPinIT(port_pin_t pin_info, port_it_t it_config) {
+void SHD_PORT_SetPinIT(sh_port_pin_t pin_info, sh_port_it_t it_config) {
 
     PORT_Type* port = g_port_bases[pin_info.port];
     uint8_t pin = pin_info.pin;

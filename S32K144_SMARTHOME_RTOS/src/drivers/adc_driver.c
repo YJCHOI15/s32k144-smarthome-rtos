@@ -1,4 +1,4 @@
-#include "adc_driver.h"
+#include "drivers/adc_driver.h"
 
 /**
  * ADC0 모듈을 초기화하고 calibration을 수행한다.

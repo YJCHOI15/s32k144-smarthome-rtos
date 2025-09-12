@@ -1,7 +1,7 @@
 #include "shh_actuator.h"
+#include "sh_config.h"
 #include "drivers/gpio_driver.h"
 #include "drivers/ftm_driver.h"
-#include "sh_config.h"
 
 #include <FreeRTOS.h>
 #include <task.h>
