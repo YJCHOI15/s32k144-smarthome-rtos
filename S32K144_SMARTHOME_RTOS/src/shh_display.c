@@ -4,10 +4,6 @@
 #include "sh_config.h"
 #include <string.h>
 
-/** 
- *********************** FND ************************
- * Common Cathod -> 1써서 led 켬
-*/
 
 static uint8_t g_fnd_buffer[6] = {0,};
 static uint8_t g_fnd_scan_digit = 0;
@@ -35,6 +31,52 @@ static const sh_port_pin_t g_fnd_sel_pins[6] = {
     PIN_FND_SEL1, PIN_FND_SEL2, PIN_FND_SEL3, PIN_FND_SEL4, PIN_FND_SEL5, PIN_FND_SEL6
 };
 #pragma GCC diagnostic pop
+
+static void _SHH_OLED_SendCommand(uint8_t cmd);
+static void _SHH_OLED_SendData(uint8_t* data, uint32_t len);
+
+void SHH_Display_Init(void) {
+
+    // FND 전부 끄기
+    for(int i = 0; i < 6; i++) {
+        SHD_GPIO_WritePin(g_fnd_sel_pins[i], 0); // Common Cathod
+    }
+
+    // SSD1306 초기화 시퀀스
+    _SHH_OLED_SendCommand(0xAE); // Display OFF
+    _SHH_OLED_SendCommand(0xD5); // Set Display Clock Divide Ratio/Oscillator Frequency
+    _SHH_OLED_SendCommand(0x80);
+    _SHH_OLED_SendCommand(0xA8); // Set MUX Ratio
+    _SHH_OLED_SendCommand(0x3F); // 128x64
+    _SHH_OLED_SendCommand(0xD3); // Set Display Offset
+    _SHH_OLED_SendCommand(0x00);
+    _SHH_OLED_SendCommand(0x40); // Set Display Start Line
+    _SHH_OLED_SendCommand(0x8D); // Charge Pump Setting
+    _SHH_OLED_SendCommand(0x14); // Enable Charge Pump
+    _SHH_OLED_SendCommand(0x20); // Set Memory Addressing Mode
+    _SHH_OLED_SendCommand(0x00); // Horizontal Addressing Mode
+    _SHH_OLED_SendCommand(0xA1); // Set Segment Re-map (column 127 -> SEG0)
+    _SHH_OLED_SendCommand(0xC8); // Set COM Output Scan Direction (re-mapped)
+    _SHH_OLED_SendCommand(0xDA); // Set COM Pins Hardware Configuration
+    _SHH_OLED_SendCommand(0x12);
+    _SHH_OLED_SendCommand(0x81); // Set Contrast Control
+    _SHH_OLED_SendCommand(0xCF);
+    _SHH_OLED_SendCommand(0xD9); // Set Pre-charge Period
+    _SHH_OLED_SendCommand(0xF1);
+    _SHH_OLED_SendCommand(0xDB); // Set VCOMH Deselect Level
+    _SHH_OLED_SendCommand(0x40);
+    _SHH_OLED_SendCommand(0xA4); // Entire Display ON (Resume)
+    _SHH_OLED_SendCommand(0xA6); // Set Normal Display
+    _SHH_OLED_SendCommand(0xAF); // Display ON
+
+    SHH_OLED_Clear();
+}
+
+
+/** 
+ *********************** FND ************************
+ * Common Cathod -> 1써서 led 켬
+*/
 
 void SHH_FND_NumberParsing(uint32_t number) {
 
@@ -190,38 +232,6 @@ static const uint8_t g_font_5x7[] = {
     0x00, 0x41, 0x36, 0x08, 0x00, // 0x7D '}'
     0x08, 0x04, 0x08, 0x10, 0x08, // 0x7E '~'
 };
-
-void SHH_OLED_Init(void) {
-
-    // SSD1306 초기화 시퀀스
-    _SHH_OLED_SendCommand(0xAE); // Display OFF
-    _SHH_OLED_SendCommand(0xD5); // Set Display Clock Divide Ratio/Oscillator Frequency
-    _SHH_OLED_SendCommand(0x80);
-    _SHH_OLED_SendCommand(0xA8); // Set MUX Ratio
-    _SHH_OLED_SendCommand(0x3F); // 128x64
-    _SHH_OLED_SendCommand(0xD3); // Set Display Offset
-    _SHH_OLED_SendCommand(0x00);
-    _SHH_OLED_SendCommand(0x40); // Set Display Start Line
-    _SHH_OLED_SendCommand(0x8D); // Charge Pump Setting
-    _SHH_OLED_SendCommand(0x14); // Enable Charge Pump
-    _SHH_OLED_SendCommand(0x20); // Set Memory Addressing Mode
-    _SHH_OLED_SendCommand(0x00); // Horizontal Addressing Mode
-    _SHH_OLED_SendCommand(0xA1); // Set Segment Re-map (column 127 -> SEG0)
-    _SHH_OLED_SendCommand(0xC8); // Set COM Output Scan Direction (re-mapped)
-    _SHH_OLED_SendCommand(0xDA); // Set COM Pins Hardware Configuration
-    _SHH_OLED_SendCommand(0x12);
-    _SHH_OLED_SendCommand(0x81); // Set Contrast Control
-    _SHH_OLED_SendCommand(0xCF);
-    _SHH_OLED_SendCommand(0xD9); // Set Pre-charge Period
-    _SHH_OLED_SendCommand(0xF1);
-    _SHH_OLED_SendCommand(0xDB); // Set VCOMH Deselect Level
-    _SHH_OLED_SendCommand(0x40);
-    _SHH_OLED_SendCommand(0xA4); // Entire Display ON (Resume)
-    _SHH_OLED_SendCommand(0xA6); // Set Normal Display
-    _SHH_OLED_SendCommand(0xAF); // Display ON
-
-    SHH_OLED_Clear();
-}
 
 void SHH_OLED_Clear(void) {
     uint8_t display_buffer[1024]; // 128 * (64 / 8) = 1024

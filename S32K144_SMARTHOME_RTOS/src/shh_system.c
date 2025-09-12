@@ -1,4 +1,6 @@
 #include "shh_system.h"
+#include "shh_display.h"
+#include "sh_config.h" 
 #include "drivers/system_init.h"
 #include "drivers/port_driver.h"
 #include "drivers/gpio_driver.h"
@@ -9,7 +11,6 @@
 #include "drivers/lpit_driver.h"
 #include "drivers/lpuart_driver.h"
 #include "drivers/sh_it_manager.h"
-#include "sh_config.h" 
 
 void SHH_Init(void)
 {
@@ -170,5 +171,8 @@ void SHH_Init(void)
 
     SHD_IT_EnableIRQ(LPIT0_Ch2_IRQn);         // 2s 타이머
     SHD_IT_SetPriority(LPIT0_Ch2_IRQn, 12);
+
+    /* 6. SHH 계층 초기화 */
+    SHH_Display_Init(); 
 
 }

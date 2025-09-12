@@ -1,9 +1,6 @@
 #ifndef SH_TASKS_H
 #define SH_TASKS_H
 
-#include "sh_config.h"
-
-
 void SH_MainControl_Task(void *pvParameters);
 void SH_Sensor_Task(void *pvParameters);
 void SH_ButtonInput_Task(void *pvParameters);

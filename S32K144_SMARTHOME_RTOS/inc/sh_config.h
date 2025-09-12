@@ -83,9 +83,23 @@ typedef enum {
     MODE_SECURITY
 } system_mode_t;
 
+/* Command Queue를 통해 전달될 명령 ID */
+typedef enum {
+    CMD_NULL = 0,
+    /* 버튼 입력 명령 */
+    CMD_BTN1_CYCLE_MODE,
+    CMD_BTN2_SELECT_DEVICE,
+    CMD_BTN3_DEVICE_ACTION_POSITIVE,
+    CMD_BTN4_DEVICE_ACTION_NEGATIVE,
+    /* CAN 원격 명령 */
+    CMD_CAN_SET_MODE,
+    CMD_CAN_CONTROL_DEVICE,
+    CMD_CAN_ALARM_OFF
+} command_id_t;
+
 /* Command Queue를 통해 전달될 메시지 구조체 */
 typedef struct {
-    uint8_t command_id; // 예: CMD_CYCLE_MODE, CMD_SELECT_DEVICE
+    command_id_t command_id; 
     int32_t value;      // 추가 데이터
 } command_msg_t;
 
@@ -100,13 +114,13 @@ typedef struct {
 /* Display Data Queue를 통해 전달될 메시지 구조체 */
 typedef struct {
     char fnd_string[7]; // "TT:HH:BB" 형식
-    char oled_line1[20];
-    char oled_line2[20];
+    char oled_string[20]; // 수동 -> 현재 장치, 그외 -> 모드 표시
 } display_data_t;
 
 /* 공유 데이터: 여러 태스크가 접근하는 시스템의 현재 상태 */
 typedef struct {
     system_mode_t current_mode;
+    bool is_alarm_active; // 보안 경고 활성화 여부
 } system_status_t;
 
 
