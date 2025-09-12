@@ -96,7 +96,7 @@ void LPIT0_Ch1_IRQHandler(void) {
     }
 }
 
-// 보안 모드일 때 1초마다 인터럽트를 발생시켜 LED 상태를 반전시킴
+// 보안 경고 상태일 때 1초마다 인터럽트를 발생시켜 LED 상태를 반전시킴
 void LPIT0_Ch2_IRQHandler(void) {
     LPIT0->MSR = LPIT_MSR_TIF2_MASK;
     if (g_lpit_callbacks[2] != NULL) {

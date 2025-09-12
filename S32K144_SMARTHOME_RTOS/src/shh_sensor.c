@@ -143,3 +143,88 @@ uint8_t SHH_ReadManualControlVr(void) {
 
     return percentage;
 }
+
+/**
+ ************************ uWave ***************************
+ */
+static volatile uint16_t g_ftm1_start_time = 0;
+static volatile uint16_t g_ftm1_end_time = 0;
+static volatile bool g_is_measurement_done = false;
+
+/**
+ * 초음파 센서용 FTM1 타이머를 프리러닝 카운터로 초기화한다.
+ */
+void SHH_uWave_Init(void) {
+
+    // 1. FTM1 모듈에 클럭 활성화 (SOSCDIV2_CLK, 8MHz)
+    PCC->PCCn[PCC_FTM1_INDEX] = PCC_PCCn_PCS(1) | PCC_PCCn_CGC_MASK;
+
+    // 2. FTM1 카운터 설정
+    FTM1->MODE |= FTM_MODE_WPDIS_MASK; // 쓰기 방지 해제
+    FTM1->SC = 0; // 카운터 정지 상태에서 설정
+    FTM1->CNTIN = 0;
+    FTM1->MOD = 0xFFFF; // 최대값까지 카운트
+    FTM1->SC = FTM_SC_PS(3) | FTM_SC_CLKS(1); // Prescaler=8, 1MHz 카운터 (1us당 1카운트)
+    FTM1->MODE &= ~FTM_MODE_WPDIS_MASK; // 쓰기 방지 재활성화
+}
+
+/**
+ * 초음파 거리 측정을 시작한다.
+ */
+void SHH_uWave_StartMeasurement(void) {
+    g_is_measurement_done = false;
+
+    // 1. Echo 핀을 상승 에지 인터럽트로 설정
+    SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_IRQ_RISING);
+
+    // 2. Trig 핀에 10us High 펄스 전송
+    SHD_GPIO_WritePin(PIN_UWAVE_TRIG, 1);
+    SHD_LPIT0_DelayUs(3, 10); // LPIT 채널 3을 이용한 10us 정밀 지연
+    SHD_GPIO_WritePin(PIN_UWAVE_TRIG, 0);
+}
+
+/**
+ * 가장 최근 측정된 거리 값을 반환한다.
+ */
+uint16_t SHH_uWave_GetDistanceCm(void) {
+
+    if (!g_is_measurement_done) {
+        return 0xFFFF; // 아직 측정 완료 전
+    }
+
+    uint32_t pulse_duration_us = 0;
+    if (g_ftm1_end_time >= g_ftm1_start_time) {
+        pulse_duration_us = g_ftm1_end_time - g_ftm1_start_time;
+    } else {
+        // 카운터 오버플로우 처리
+        pulse_duration_us = (0xFFFF - g_ftm1_start_time) + g_ftm1_end_time;
+    }
+
+    // 1us 당 1카운트이므로, pulse_duration_us는 시간과 같음
+    return (uint16_t)(pulse_duration_us / 58);
+}
+
+
+/**
+ * 초음파 Echo 핀의 상태 변화를 처리하는 함수 (PORTC_IRQHandler에서 호출됨)
+ */
+void SHH_uWave_Echo_ISR_Handler(void) {
+
+    // 상승 에지 감지 (펄스 시작)
+    if (SHD_GPIO_ReadPin(PIN_UWAVE_ECHO) == 1) {
+        g_ftm1_start_time = FTM1->CNT; // 타이머 시작 시간 기록
+        // 다음 인터럽트는 하강 에지에서 발생하도록 변경
+        SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_IRQ_FALLING);
+    }
+    // 하강 에지 감지 (펄스 종료)
+    else {
+        g_ftm1_end_time = FTM1->CNT; // 타이머 종료 시간 기록
+        g_is_measurement_done = true; // 측정 완료 플래그 설정
+        SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_DISABLED); // 다음 측정을 위해 인터럽트 비활성화
+
+        // SecurityEvent_Task에 측정 완료 신호 전송
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        xSemaphoreGiveFromISR(g_uWave_semaphore, &xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    }
+}

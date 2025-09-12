@@ -19,6 +19,7 @@ QueueHandle_t g_sensor_data_queue;
 QueueHandle_t g_display_data_queue;
 SemaphoreHandle_t g_system_status_mutex;
 SemaphoreHandle_t g_button_interrupt_semaphore;
+SemaphoreHandle_t g_uWave_semaphore;
 EventGroupHandle_t g_security_event_group;
 
 /************************** 전역 변수 정의 ************************/
@@ -223,8 +224,49 @@ void SH_Display_Task(void *pvParameters) {
 /************************ SecurityEventTask *************************/
 /********************************************************************/
 void SH_SecurityEvent_Task(void *pvParameters) {
+
     (void)pvParameters;
-    for(;;); 
+
+    for (;;) {
+        // 1. 데이터시트 권장사항(60ms 이상)에 따라 100ms마다 측정 사이클 실행
+        vTaskDelay(pdMS_TO_TICKS(100));
+
+        // 2. 현재 시스템이 보안 모드일 때만 거리 측정 수행
+        xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
+        bool is_security_mode = (g_system_status.current_mode == MODE_SECURITY);
+        xSemaphoreGive(g_system_status_mutex);
+
+        if (is_security_mode)
+        {
+            // 2. 거리 측정 시작 (이 함수는 즉시 반환됨)
+            SHH_uWave_StartMeasurement();
+
+            // 3. 측정 완료 인터럽트를 기다림 (최대 50ms 타임아웃)
+            if (xSemaphoreTake(g_uWave_semaphore, pdMS_TO_TICKS(50)) == pdTRUE) {
+
+                // 4. 신호 수신 시 거리 값을 가져와서 판단
+                uint16_t distance_cm = SHH_uWave_GetDistanceCm();
+
+                if ((distance_cm != 0xFFFF) && (distance_cm < SECURITY_DISTANCE_THRESHOLD_CM)) {
+                    xEventGroupSetBits(g_security_event_group, 0x01);
+                }
+            }
+        }
+    }
+}
+
+void PORTC_IRQHandler(void) {
+
+    // Echo 핀에서 인터럽트가 발생했는지 확인
+    if ((PORTC->ISFR & (1UL << 13)))
+    {
+        // HAL에 있는 핸들러 호출
+        SHH_uWave_Echo_ISR_Handler();
+    }
+
+    // 발생한 모든 핀의 인터럽트 플래그를 클리어
+    // 주의: 다른 PORTC 인터럽트 소스가 있다면, 해당 플래그만 선택적으로 클리어해야 함
+    PORTC->ISFR = 0xFFFFFFFF;
 }
 
 /********************************************************************/

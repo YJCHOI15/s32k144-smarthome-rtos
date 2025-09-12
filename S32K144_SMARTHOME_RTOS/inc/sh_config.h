@@ -121,6 +121,9 @@ typedef struct {
     uint16_t vr_raw;  // 0-4095
 } sensor_data_t;
 
+/* 초음파 감지 거리 */
+#define SECURITY_DISTANCE_THRESHOLD_CM 50
+
 /* Display Data Queue를 통해 전달될 메시지 구조체 */
 typedef struct {
     char fnd_string[7]; // "TT:HH:BB" 형식
@@ -143,6 +146,7 @@ extern QueueHandle_t g_sensor_data_queue;
 extern QueueHandle_t g_display_data_queue;
 extern SemaphoreHandle_t g_system_status_mutex;
 extern SemaphoreHandle_t g_button_interrupt_semaphore;
+extern SemaphoreHandle_t g_uWave_semaphore;
 extern EventGroupHandle_t g_security_event_group;
 
 

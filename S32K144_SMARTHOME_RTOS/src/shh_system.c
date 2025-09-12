@@ -163,14 +163,17 @@ void SHH_Init(void)
     SHD_IT_EnableIRQ(CAN0_ORed_0_15_MB_IRQn); // CAN0 수신
     SHD_IT_SetPriority(CAN0_ORed_0_15_MB_IRQn, 5);
 
-    SHD_IT_EnableIRQ(LPIT0_Ch0_IRQn);         // 1s 타이머
+    SHD_IT_EnableIRQ(LPIT0_Ch0_IRQn);         //
     SHD_IT_SetPriority(LPIT0_Ch0_IRQn, 12);
 
-    SHD_IT_EnableIRQ(LPIT0_Ch1_IRQn);         // 500ms 타이머
+    SHD_IT_EnableIRQ(LPIT0_Ch1_IRQn);         // CAN 500ms Broadcast
     SHD_IT_SetPriority(LPIT0_Ch1_IRQn, 12);
 
-    SHD_IT_EnableIRQ(LPIT0_Ch2_IRQn);         // 2s 타이머
+    SHD_IT_EnableIRQ(LPIT0_Ch2_IRQn);         // 1초 보안 경고 상태 LED
     SHD_IT_SetPriority(LPIT0_Ch2_IRQn, 12);
+
+    // SHD_IT_EnableIRQ(LPIT0_Ch3_IRQn);         // us 딜레이 함수
+    // SHD_IT_SetPriority(LPIT0_Ch3_IRQn, 12);
 
     /* 6. SHH 계층 초기화 */
     SHH_Display_Init(); 
