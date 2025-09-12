@@ -15,16 +15,8 @@
 /* Including necessary configuration files. */
 #include "sdk_project_config.h"
 #include "shh_system.h"
+#include "sh_tasks.h"
 
-volatile int exit_code = 0;
-/* User includes */
-
-/*!
-  \brief The main function for the project.
-  \details The startup initialization sequence is the following:
- * - startup asm routine
- * - main()
-*/
 int main(void)
 {
     // 1. 모든 하드웨어 드라이버를 '사용 가능한 상태'로 만듭니다.

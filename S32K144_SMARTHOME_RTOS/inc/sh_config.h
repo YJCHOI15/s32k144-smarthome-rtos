@@ -2,9 +2,9 @@
 #define SH_CONFIG_H
 
 #include "drivers/port_driver.h"
+#include "sh_tasks.h"
 
 /********************** Pin Mapping *************************/
-
 #define PIN_LPUART1_RX                   ((port_pin_t){PORT_C, 6})
 #define PIN_LPUART1_TX                   ((port_pin_t){PORT_C, 7})
 
@@ -69,7 +69,6 @@
 
 
 /**************** SmartHome Data Structure *****************/
-
 /* 시스템 모드를 나타내는 열거형 */
 typedef enum {
     MODE_MONITORING,
@@ -105,10 +104,14 @@ typedef struct {
 
 
 /********************* I2C Slave Adddress ******************/
-
 #define SSD1306_OLED_ADDR 0x3C    // 또는 0x3D
 
-/**************** RTOS & Application Configuration ****************/
+/***************** RTOS Object Handler **********************/
+extern QueueHandle_t g_command_queue;
+extern QueueHandle_t g_sensor_data_queue;
+extern QueueHandle_t g_display_data_queue;
+extern SemaphoreHandle_t g_system_status_mutex;
+extern EventGroupHandle_t g_security_event_group;
 
 
 #endif /* SH_CONFIG_H */
