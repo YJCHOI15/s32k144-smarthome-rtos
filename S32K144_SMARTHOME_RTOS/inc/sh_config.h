@@ -101,13 +101,12 @@ typedef struct {
 /* 공유 데이터: 여러 태스크가 접근하는 시스템의 현재 상태 */
 typedef struct {
     system_mode_t current_mode;
-    // ... 기타 공유가 필요한 상태 변수들
 } system_status_t;
 
 
 /********************* I2C Slave Adddress ******************/
 
-#define SENSOR_OLED_ADDR 0x3C    // 또는 0x3D
+#define SSD1306_OLED_ADDR 0x3C    // 또는 0x3D
 
 /**************** RTOS & Application Configuration ****************/
 

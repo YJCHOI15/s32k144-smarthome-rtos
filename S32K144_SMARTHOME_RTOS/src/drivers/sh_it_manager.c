@@ -1,4 +1,5 @@
-#include "interrupt_manager.h"
+#include "sh_it_manager.h"
+#include "S32K144.h"
 
  /** 
   * irq_num / 32는 ISER, ICER 배열의 인덱스를,

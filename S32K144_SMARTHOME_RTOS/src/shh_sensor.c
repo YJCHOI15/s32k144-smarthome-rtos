@@ -29,6 +29,23 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data);
 static uint8_t g_last_temperature = -99;
 static uint8_t g_last_humidity = -99;
 
+uint8_t SHH_ReadTemperature(void) {
+
+    uint8_t buffer[5] = {0,};
+    if (_SHH_Read_DHT11_40bit_Data(buffer)) {
+        g_last_humidity = buffer[0];
+        g_last_temperature = buffer[2];
+    }
+    // 실패해도 마지막 성공값 반환
+    return g_last_temperature;
+}
+
+uint8_t SHH_ReadHumidity(void) {
+    // SHH_ReadTemperature가 먼저 호출되어 값을 업데이트했다고 가정
+    // 이렇게 하면 DHT11과의 통신은 한 번만 수행된다. 
+    return g_last_humidity;
+}
+
 /* DHT11 센서로부터 40비트 데이터를 읽어오는 내부 함수 */
 static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
 
@@ -104,23 +121,9 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
     return false;
 }
 
-
-uint8_t SHH_ReadTemperature(void) {
-
-    uint8_t buffer[5] = {0,};
-    if (_SHH_Read_DHT11_Data(buffer)) {
-        g_last_humidity = buffer[0];
-        g_last_temperature = buffer[2];
-    }
-    // 실패해도 마지막 성공값 반환
-    return g_last_temperature;
-}
-
-uint8_t SHH_ReadHumidity(void) {
-    // SHH_ReadTemperature가 먼저 호출되어 값을 업데이트했다고 가정
-    // 이렇게 하면 DHT11과의 통신은 한 번만 수행된다. 
-    return g_last_humidity;
-}
+/**
+ ************************ CDS & VR ***************************
+ */
 
 uint8_t SHH_ReadBrightnessSensor(void) {
 

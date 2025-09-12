@@ -9,7 +9,7 @@
 void SHD_FTM0_Init(void) {
 
     /* FTM0 모듈에 Bus Clock을 클럭 소스로 하여 활성화 */
-    PCC->PCCn[PCC_FTM0_INDEX] = PCC_PCCn_PCS(0b110)  /* PCS=6: SPLLDIV1_CLK (80MHz) */
+    PCC->PCCn[PCC_FTM0_INDEX] = PCC_PCCn_PCS(6)  /* PCS=6: SPLLDIV1_CLK (80MHz) */
                               | PCC_PCCn_CGC_MASK;   /* CGC=1: Clock enabled */
 }
 
@@ -38,8 +38,8 @@ void SHD_FTM0_InitPwmChannel(uint8_t channel) {
         FTM0->MOD = FTM0_MOD_VALUE;
 
         /* SC (Status and Control) 레지스터 설정 */
-        FTM0->SC = FTM_SC_PS(0b111)      /* PS=7: Prescaler = 128 */
-                   | FTM_SC_CLKS(0b01);  /* CLKS=1: System Clock (Bus Clock)을 소스로 카운터 시작 */
+        FTM0->SC = FTM_SC_PS(7)       /* PS=7: Prescaler = 128 */
+                   | FTM_SC_CLKS(1);  /* CLKS=1: System Clock (Bus Clock)을 소스로 카운터 시작 */
 
         /* FTM0 Write Protection Enable */
         FTM0->MODE &= ~FTM_MODE_WPDIS_MASK;

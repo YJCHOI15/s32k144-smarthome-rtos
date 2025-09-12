@@ -77,9 +77,9 @@ static void NormalRUNmode_80MHz(void) {
      * - Slow Clock (Flash): 80MHz / 3 = 26.67MHz
      */
     SCG->RCCR = SCG_RCCR_SCS(6)
-              | SCG_RCCR_DIVCORE(0b01)
-              | SCG_RCCR_DIVBUS(0b01)
-              | SCG_RCCR_DIVSLOW(0b10);
+              | SCG_RCCR_DIVCORE(1)
+              | SCG_RCCR_DIVBUS(1)
+              | SCG_RCCR_DIVSLOW(2);
 
     /* 시스템 클럭 소스가 SPLL로 완전히 전환될 때까지 대기 */
     while (((SCG->CSR & SCG_CSR_SCS_MASK) >> SCG_CSR_SCS_SHIFT ) != 6) {}

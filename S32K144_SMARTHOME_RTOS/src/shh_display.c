@@ -254,7 +254,7 @@ void SHH_OLED_PrintString(uint8_t line, uint8_t col, const char* str) {
 static void _SHH_OLED_SendCommand(uint8_t cmd){
 
     uint8_t cmd_buffer[2] = {0x00, cmd}; // Control byte for command is 0x00
-    SHD_LPI2C0_Write(SENSOR_OLED_ADDR, cmd_buffer, 2);
+    SHD_LPI2C0_Write(SSD1306_OLED_ADDR, cmd_buffer, 2);
 }
 
 static void _SHH_OLED_SendData(uint8_t* data, uint32_t len) {
@@ -262,6 +262,6 @@ static void _SHH_OLED_SendData(uint8_t* data, uint32_t len) {
     uint8_t data_buffer[len + 1];
     data_buffer[0] = 0x40; // Control byte for data is 0x40
     memcpy(&data_buffer[1], data, len);
-    SHD_LPI2C0_Write(SENSOR_OLED_ADDR, data_buffer, len + 1);
+    SHD_LPI2C0_Write(SSD1306_OLED_ADDR, data_buffer, len + 1);
 }
 

@@ -8,7 +8,7 @@
 #include "drivers/flexcan_driver.h"
 #include "drivers/lpit_driver.h"
 #include "drivers/lpuart_driver.h"
-#include "drivers/interrupt_manager.h"
+#include "drivers/sh_it_manager.h"
 #include "sh_config.h" 
 
 void SHH_Init(void)

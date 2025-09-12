@@ -35,7 +35,7 @@ bool SHD_LPI2C0_Write(uint8_t slave_addr, uint8_t* data, uint32_t len) {
     uint32_t timeout = 0;
 
     /* 1. START 신호 및 슬레이브 주소(Write) 전송 */
-    LPI2C0->MTDR = LPI2C_MTDR_CMD(0b0100) | LPI2C_MTDR_DATA(slave_addr << 1);
+    LPI2C0->MTDR = LPI2C_MTDR_CMD(4) | LPI2C_MTDR_DATA(slave_addr << 1);
 
     /* 2. 데이터 바이트 전송 */
     for (i = 0; i < len; ++i) {
@@ -47,7 +47,7 @@ bool SHD_LPI2C0_Write(uint8_t slave_addr, uint8_t* data, uint32_t len) {
         }
 
         /* 데이터 전송 */
-        LPI2C0->MTDR = LPI2C_MTDR_CMD(0b0001) | LPI2C_MTDR_DATA(data[i]);
+        LPI2C0->MTDR = LPI2C_MTDR_CMD(1) | LPI2C_MTDR_DATA(data[i]);
 
         /* NACK(Not Acknowledge) 수신 시 전송 중단 */
         if (LPI2C0->MSR & LPI2C_MSR_NDF_MASK) {
@@ -57,7 +57,7 @@ bool SHD_LPI2C0_Write(uint8_t slave_addr, uint8_t* data, uint32_t len) {
     }
 
     /* 3. STOP 신호 전송 */
-    LPI2C0->MTDR = LPI2C_MTDR_CMD(0b0010);
+    LPI2C0->MTDR = LPI2C_MTDR_CMD(2);
 
     return true;
 }
