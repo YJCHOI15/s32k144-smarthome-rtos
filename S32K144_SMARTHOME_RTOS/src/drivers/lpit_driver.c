@@ -80,7 +80,6 @@ void SHD_LPIT0_DelayUs(uint8_t timer_ch, uint32_t us) {
 
 /* 이 함수들은 startup.s 파일의 벡터 테이블에 각각 등록되어 있다. */
 
-// Sensor_Task를 1초마다 깨워서 온/습도, 밝기 값 읽음
 void LPIT0_Ch0_IRQHandler(void) {
     LPIT0->MSR = LPIT_MSR_TIF0_MASK;
 
@@ -89,7 +88,7 @@ void LPIT0_Ch0_IRQHandler(void) {
     }
 }
 
-// CAN_Comm_Task가 0.5초마다 시스템의 현재 상태를 외부에 알림
+// 500ms CAN 상태 Broadcast
 void LPIT0_Ch1_IRQHandler(void) {
     LPIT0->MSR = LPIT_MSR_TIF1_MASK;
     if (g_lpit_callbacks[1] != NULL) {
@@ -105,7 +104,7 @@ void LPIT0_Ch2_IRQHandler(void) {
     }
 }
 
-// 사용 안함
+// LPIT0 CH3은 us 딜레이 함수에서 사용
 void LPIT0_Ch3_IRQHandler(void) {
     LPIT0->MSR = LPIT_MSR_TIF3_MASK;
     if (g_lpit_callbacks[3] != NULL) {

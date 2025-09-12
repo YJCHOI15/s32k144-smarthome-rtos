@@ -41,7 +41,9 @@ static void _run_monitoring_mode_logic(const sensor_data_t* data);
 static void _update_display(void);
 static void _security_led_timer_callback(void);
 
+/********************************************************************/
 /************************ MainControlTask ***************************/
+/********************************************************************/
 void SH_MainControl_Task(void *pvParameters) {
 
     (void)pvParameters;
@@ -94,33 +96,71 @@ void SH_MainControl_Task(void *pvParameters) {
     }
 }
 
-void SH_Sensor_Task(void *pvParameters) { 
+/********************************************************************/
+/**************************** SensorTask ****************************/
+/********************************************************************/
+void SH_Sensor_Task(void *pvParameters) {
+
     (void)pvParameters;
-    for(;;); 
+    sensor_data_t sensor_data_to_send;
+
+    for (;;) {
+        // 1. 1000ms마다 주기적으로 실행
+        vTaskDelay(pdMS_TO_TICKS(1000));
+
+        // 2. HAL 함수를 호출하여 모든 센서 값을 읽어온다.
+        sensor_data_to_send.temperature = SHH_ReadTemperature();
+        sensor_data_to_send.humidity    = SHH_ReadHumidity();
+
+        // HAL 함수가 0-100% 값을 반환하므로, 0-4095 범위의 raw 값으로 역산합니다.
+        uint8_t cds_percent = SHH_ReadBrightnessSensor();
+        sensor_data_to_send.cds_raw = (uint16_t)((cds_percent * 4095) / 100);
+
+        uint8_t vr_percent = SHH_ReadManualControlVr();
+        sensor_data_to_send.vr_raw = (uint16_t)((vr_percent * 4095) / 100);
+
+        // 3. 수집된 데이터를 Sensor Data Queue로 전송한다.
+        // xQueueSend는 큐에 공간이 생길 때까지 기다리지 않고 즉시 반환될 수 있다.
+        // 이 경우 큐가 꽉 차지 않았다고 가정한다.
+        xQueueSend(g_sensor_data_queue, &sensor_data_to_send, 0);
+    }
 }
 
+/********************************************************************/
+/************************ ButtonInputTask ***************************/
+/********************************************************************/
 void SH_ButtonInput_Task(void *pvParameters) {
     (void)pvParameters;
     for(;;); 
 }
 
+/********************************************************************/
+/**************************** CanCommTask ***************************/
+/********************************************************************/
 void SH_CanComm_Task(void *pvParameters) {
     (void)pvParameters;
     for(;;); 
 }
 
+/********************************************************************/
+/**************************** DisplayTask ***************************/
+/********************************************************************/
 void SH_Display_Task(void *pvParameters) {
     (void)pvParameters;
     for(;;); 
 }
 
+/********************************************************************/
+/************************ SecurityEventTask *************************/
+/********************************************************************/
 void SH_SecurityEvent_Task(void *pvParameters) {
     (void)pvParameters;
     for(;;); 
 }
 
-
-/************************* 내부 함수 정의 *****************************/
+/********************************************************************/
+/************************* 내부 함수 정의 ********************* ******/
+/********************************************************************/
 static void _handle_command(command_msg_t* cmd) {
 
     // 현재 시스템 상태 읽어옴
