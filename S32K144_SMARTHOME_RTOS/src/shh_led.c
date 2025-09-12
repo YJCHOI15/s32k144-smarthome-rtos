@@ -40,10 +40,6 @@ void SHH_SecurityStandbyLED_Off(void) {
     SHD_GPIO_WritePin(PIN_LED2, 1);
 }
 
-void SHH_SecurityStandbyLED_Toggle(void) {
-    SHD_GPIO_TogglePin(PIN_LED2);
-}
-
 void SHH_SecurityWarningLED_On(void) {
     SHD_GPIO_WritePin(PIN_LED4, 0);
     SHD_GPIO_WritePin(PIN_LED5, 0);
@@ -54,6 +50,12 @@ void SHH_SecurityWarningLED_Off(void) {
     SHD_GPIO_WritePin(PIN_LED4, 1);
     SHD_GPIO_WritePin(PIN_LED5, 1);
     SHD_GPIO_WritePin(PIN_LED6, 1);
+}
+
+void SHH_SecurityWarningLED_Toggle(void) {
+    SHD_GPIO_TogglePin(PIN_LED4);
+    SHD_GPIO_TogglePin(PIN_LED5);
+    SHD_GPIO_TogglePin(PIN_LED6);
 }
 
 void SHH_MainLight_SetBrightness(uint8_t brightness_percent) {

@@ -55,9 +55,9 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
     // 1. 통신 시작 신호 (MCU -> DHT11)
     SHD_GPIO_InitPin(PIN_TEMP_HUMI, GPIO_OUTPUT);
     SHD_GPIO_WritePin(PIN_TEMP_HUMI, 0);
-    SHD_LPIT0_CH3_DelayUs(18000);
+    SHD_LPIT0_DelayUs(3, 18000);
     SHD_GPIO_WritePin(PIN_TEMP_HUMI, 1);
-    SHD_LPIT0_CH3_DelayUs(30);
+    SHD_LPIT0_DelayUs(3, 30);
     SHD_GPIO_InitPin(PIN_TEMP_HUMI, GPIO_INPUT);
 
 
@@ -65,18 +65,18 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
     timeout_counter = 100;
     while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1) {
         if (timeout_counter-- == 0) return false; 
-        SHD_LPIT0_CH3_DelayUs(1);
+        SHD_LPIT0_DelayUs(3, 1);
     }
     timeout_counter = 100;
     while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 0) {
         if (timeout_counter-- == 0) return false; 
-        SHD_LPIT0_CH3_DelayUs(1);
+        SHD_LPIT0_DelayUs(3, 1);
     }
     // 데이터 전송 시작을 위해 핀이 다시 Low가 될 때까지 대기
     timeout_counter = 100;
     while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1) {
         if (timeout_counter-- == 0) return false; 
-        SHD_LPIT0_CH3_DelayUs(1);
+        SHD_LPIT0_DelayUs(3, 1);
     }
 
     // 3. 40비트 데이터 수신 (DHT11 -> MCU)
@@ -85,14 +85,14 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
         timeout_counter = 100;
         while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 0) {
             if (timeout_counter-- == 0) return false; 
-            SHD_LPIT0_CH3_DelayUs(1);
+            SHD_LPIT0_DelayUs(3, 1);
         }
 
         // 비트 길이 측정 (High)
         uint32_t high_duration = 0;
         while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1) {
             high_duration++;
-            SHD_LPIT0_CH3_DelayUs(1);
+            SHD_LPIT0_DelayUs(3, 1);
             if (high_duration > 200) return false; 
         }
 

@@ -22,7 +22,7 @@ void SHD_LPIT0_Init(void) {
 }
 
 /**
- * 지정된 LPIT 채널에 주기적인 타이머를 설정한다.
+ * 지정된 LPIT 채널에 주기적인 타이머를 설정하고 시작한다.
  */
 void SHD_LPIT0_SetPeriodic(uint8_t timer_ch, uint32_t period_ms, void (*callback)(void)) {
 
@@ -42,24 +42,40 @@ void SHD_LPIT0_SetPeriodic(uint8_t timer_ch, uint32_t period_ms, void (*callback
 
     /* 5. 해당 채널의 인터럽트 활성화 */
     LPIT0->MIER |= (1UL << timer_ch);
+
+    /* 6. 카운터 시작 */
+    LPIT0->SETTEN |= (1UL << timer_ch);
 }
 
-/* shh_sensor - 온습도 통신용 delay 함수 */
-void SHD_LPIT0_CH3_DelayUs(uint32_t us) {
+/**
+ * 지정된 LPIT0 채널의 타이머를 중지한다.
+ */
+void SHD_LPIT0_Stop(uint8_t timer_ch)
+{
+    if (timer_ch > 3) return;
+    LPIT0->CLRTEN |= (1UL << timer_ch); // 타이머 카운터 중지
+    LPIT0->MIER &= ~(1UL << timer_ch);  // 인터럽트 비활성화
+    g_lpit_callbacks[timer_ch] = NULL;  // 콜백 함수 등록 해제
+}
+
+/* us 단위 delay 함수 */
+void SHD_LPIT0_DelayUs(uint8_t timer_ch, uint32_t us) {
+    if (timer_ch > 3) return;
 
     /* 1. 타이머 주기를 클럭 카운트 값으로 변환 (8MHz 기준, 1us = 8 카운트) */
     uint32_t timer_val = 8 * us;
-    LPIT0->TMR[3].TVAL = timer_val;
+    LPIT0->TMR[timer_ch].TVAL = timer_val;
 
-    /* 2. 타이머 시작 */
-    LPIT0->SETTEN |= (1UL << 3);
+    /* 2. 타이머 시작 (인터럽트는 비활성화 상태로 유지) */
+    LPIT0->TMR[timer_ch].TCTRL = LPIT_TMR_TCTRL_T_EN_MASK;
+    LPIT0->SETTEN |= (1UL << timer_ch);
 
     /* 3. 타이머 만료 플래그(TIF)가 1이 될 때까지 대기 (Polling) */
-    while ((LPIT0->MSR & (1UL << 3)) == 0);
+    while ((LPIT0->MSR & (1UL << timer_ch)) == 0);
 
     /* 4. 타이머 비활성화 및 플래그 클리어 */
-    LPIT0->CLRTEN |= (1UL << 3);
-    LPIT0->MSR = (1UL << 3); // 플래그는 쓰기로 클리어
+    LPIT0->CLRTEN |= (1UL << timer_ch);
+    LPIT0->MSR = (1UL << timer_ch); // 플래그는 쓰기로 클리어
 }
 
 /* 이 함수들은 startup.s 파일의 벡터 테이블에 각각 등록되어 있다. */

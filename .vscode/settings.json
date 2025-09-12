@@ -3,6 +3,7 @@
         "sdk_project_config.h": "c",
         "event_groups.h": "c",
         "sh_config.h": "c",
-        "ftm_driver.h": "c"
+        "ftm_driver.h": "c",
+        "shh_sound.h": "c"
     }
 }

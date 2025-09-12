@@ -100,10 +100,20 @@ typedef enum {
 /* Command Queue를 통해 전달될 메시지 구조체 */
 typedef struct {
     command_id_t command_id; 
-    int32_t value;      // 추가 데이터
+    int32_t value;      
+        /**
+         * CMD_CAN_SET_MODE:
+         * 0: MODE_MONITORING, 1: MODE_MANUAL, 2: MODE_SECURITY
+         */
+        /**
+         * CMD_CAN_CONTROL_DEVICE:
+         * 하위 8비트 (0-7): 제어할 장치 ID (1=서보, 2=스텝, 3=릴레이)
+         * 상위 24비트 (8-31): 동작 값 (0=OFF/닫힘, 1=ON/열림, 스텝 모터의 경우 이동할 스텝 수)
+         */
 } command_msg_t;
 
 /* Sensor Data Queue를 통해 전달될 메시지 구조체 */
+#define TEMP_THRESHOLD   28  // FAN 작동 온도
 typedef struct {
     uint8_t temperature;
     uint8_t humidity;

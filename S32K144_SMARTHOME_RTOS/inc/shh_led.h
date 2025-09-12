@@ -14,11 +14,11 @@ void SHH_ModeLED_Set(system_mode_t mode);
 /* 보안 대기 상태 LED 제어 */
 void SHH_SecurityStandbyLED_On(void);
 void SHH_SecurityStandbyLED_Off(void);
-void SHH_SecurityStandbyLED_Toggle(void);
 
 /* 보안 경고 LED 제어 */
 void SHH_SecurityWarningLED_On(void);
 void SHH_SecurityWarningLED_Off(void);
+void SHH_SecurityWarningLED_Toggle(void);
 
 /* 외부 조명(LED 8) 밝기 제어(PWM) */
 void SHH_MainLight_SetBrightness(uint8_t brightness_percent);

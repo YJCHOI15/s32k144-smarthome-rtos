@@ -7,6 +7,9 @@
 #include "shh_sensor.h"
 #include "shh_sound.h"
 #include "shh_system.h"
+#include "lpit_driver.h"
+
+#include <stdio.h>
 
 /************************ RTOS 객체 핸들러 정의 *******************/
 QueueHandle_t g_command_queue;
@@ -36,9 +39,12 @@ static void _handle_sensor_data(sensor_data_t* data);
 static void _handle_security_event(void);
 static void _run_monitoring_mode_logic(const sensor_data_t* data);
 static void _update_display(void);
+static void _security_led_timer_callback(void);
 
 /************************ MainControlTask ***************************/
 void SH_MainControl_Task(void *pvParameters) {
+
+    (void)pvParameters;
 
     QueueSetHandle_t event_queue_set;
     QueueSetMemberHandle_t activated_member;
@@ -88,11 +94,30 @@ void SH_MainControl_Task(void *pvParameters) {
     }
 }
 
-void SH_Sensor_Task(void *pvParameters) { for(;;); }
-void SH_ButtonInput_Task(void *pvParameters) { for(;;); }
-void SH_CanComm_Task(void *pvParameters) { for(;;); }
-void SH_Display_Task(void *pvParameters) { for(;;); }
-void SH_SecurityEvent_Task(void *pvParameters) { for(;;); }
+void SH_Sensor_Task(void *pvParameters) { 
+    (void)pvParameters;
+    for(;;); 
+}
+
+void SH_ButtonInput_Task(void *pvParameters) {
+    (void)pvParameters;
+    for(;;); 
+}
+
+void SH_CanComm_Task(void *pvParameters) {
+    (void)pvParameters;
+    for(;;); 
+}
+
+void SH_Display_Task(void *pvParameters) {
+    (void)pvParameters;
+    for(;;); 
+}
+
+void SH_SecurityEvent_Task(void *pvParameters) {
+    (void)pvParameters;
+    for(;;); 
+}
 
 
 /************************* 내부 함수 정의 *****************************/
@@ -111,9 +136,16 @@ static void _handle_command(command_msg_t* cmd) {
             // 보안 경고가 활성화 상태가 아닐 때만 모드 변경 가능
             if (!is_alarm_active) {
                 xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
-                if (current_mode == MODE_MONITORING) g_system_status.current_mode = MODE_MANUAL;
-                else if (current_mode == MODE_MANUAL) g_system_status.current_mode = MODE_SECURITY;
-                else if (current_mode == MODE_SECURITY) g_system_status.current_mode = MODE_MANUAL;
+                if (current_mode == MODE_MONITORING) {
+                    g_system_status.current_mode = MODE_MANUAL;
+                    SHH_SecurityWarningLED_Off();
+                } else if (current_mode == MODE_MANUAL) {
+                    g_system_status.current_mode = MODE_SECURITY;
+                    SHH_SecurityStandbyLED_On(); 
+                } else if (current_mode == MODE_SECURITY) {
+                    g_system_status.current_mode = MODE_MANUAL;
+                    SHH_SecurityWarningLED_Off();
+                }
                 SHH_ModeLED_Set(g_system_status.current_mode);
                 xSemaphoreGive(g_system_status_mutex);
                 _update_display();
@@ -177,20 +209,39 @@ static void _handle_command(command_msg_t* cmd) {
             g_system_status.is_alarm_active = false;
             // 알람만 끄고 모드는 보안 모드로 유지
             SHH_Buzzer_StopAlarm();
+            SHD_LPIT0_Stop(2);  // 경고 LED4, 5, 6 점멸 타이머 중지
             SHH_SecurityWarningLED_Off();
             xSemaphoreGive(g_system_status_mutex);
             break;
 
         case CMD_CAN_CONTROL_DEVICE:
-            // TODO: CAN 원격 장치 제어 로직 구현 (cmd->value 파싱 필요)
+        {
+            // cmd->value에서 장치 ID와 동작 값을 파싱
+            uint8_t device_id = (cmd->value) & 0xFF;       
+            int32_t action_value = (cmd->value) >> 8;   
+
+            switch(device_id) {
+                case 1: // DEVICE_SERVO
+                    if (action_value == 1) SHH_DoorLock_Open();
+                    else SHH_DoorLock_Close();
+                    break;
+                case 2: // DEVICE_STEP
+                    SHH_Blinds_Move(action_value); 
+                    break;
+                case 3: // DEVICE_RELAY
+                    if (action_value == 1) SHH_ExternalPower_On();
+                    else SHH_ExternalPower_Off();
+                    break;
+            }
             break;
+        }
 
         default:
             break;
     }
 }
 
-static void handle_sensor_data(sensor_data_t* data) {
+static void _handle_sensor_data(sensor_data_t* data) {
 
     // 최신 센서 데이터 업데이트
     g_latest_sensor_data = *data;
@@ -201,7 +252,7 @@ static void handle_sensor_data(sensor_data_t* data) {
 
     // 현재 모드에 따라 로직 수행
     if (current_mode == MODE_MONITORING) {
-        run_monitoring_mode_logic(data);
+        _run_monitoring_mode_logic(data);
     }
     else if (current_mode == MODE_MANUAL) {
         uint8_t brightness_percent = (uint8_t)((data->vr_raw * 100) / 4095);
@@ -212,14 +263,46 @@ static void handle_sensor_data(sensor_data_t* data) {
     _update_display();
 }
 
-static void handle_security_event(void)
-{
-    // ... (보안 이벤트 처리 로직) ...
+static void _handle_security_event(void) {
+
+    xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
+    system_mode_t current_mode = g_system_status.current_mode;
+    bool is_alarm_active = g_system_status.is_alarm_active;
+    xSemaphoreGive(g_system_status_mutex);
+
+    // 보안 모드가 아니거나, 이미 알람이 울리고 있다면 아무것도 하지 않음
+    if ((current_mode != MODE_SECURITY) || is_alarm_active) {
+        return;
+    }
+
+    // 알람 상태로 전환
+    xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
+    g_system_status.is_alarm_active = true;
+    xSemaphoreGive(g_system_status_mutex);
+
+    // 시청각적 경고 시작
+    SHH_SecurityStandbyLED_Off();       // 대기 LED2 끄기
+    SHD_LPIT0_SetPeriodic(2, 1000, _security_led_timer_callback);
+    SHH_Buzzer_StartAlarm();            // 부저 울림 시작 
+
 }
 
-static void run_monitoring_mode_logic(const sensor_data_t* data)
-{
-    // ... (자동 제어 로직) ...
+static void _security_led_timer_callback(void) {
+    SHH_SecurityWarningLED_Toggle();
+}
+
+static void _run_monitoring_mode_logic(const sensor_data_t* data) {
+    // 자동 팬 제어 (온도 기반)
+    // sh_config.h 와 같은 설정 파일에서 임계값을 관리하는 것이 더 좋습니다.
+    if (data->temperature > TEMP_THRESHOLD) {
+        SHH_Fan_On();
+    } else {
+        SHH_Fan_Off();
+    }
+
+    // 자동 조명 제어 (밝기 기반)
+    uint8_t brightness_percent = (uint8_t)((data->cds_raw * 100) / 4095);
+    SHH_MainLight_SetBrightness(100 - brightness_percent);
 }
 
 static void _update_display(void) {
