@@ -136,6 +136,15 @@ typedef struct {
     bool is_alarm_active; // 보안 경고 활성화 여부
 } system_status_t;
 
+/* CAN ID 정의 */
+// MCU -> PC
+#define CAN_ID_STATUS_ENV       0x10 // 환경 데이터 (온/습도, 밝기)
+#define CAN_ID_STATUS_SYSTEM    0x11 // 시스템 상태 (모드, 알람)
+
+// PC -> MCU
+#define CAN_ID_CMD_SET_MODE     0x20 // 원격 모드 변경 명령
+#define CAN_ID_CMD_ALARM_OFF    0x21 // 원격 알람 해제 명령
+#define CAN_ID_CMD_DEVICE_CTRL  0x22 // 원격 장치 제어 명령
 
 /********************* I2C Slave Adddress ******************/
 #define SSD1306_OLED_ADDR 0x3C    // 또는 0x3D

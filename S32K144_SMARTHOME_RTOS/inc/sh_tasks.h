@@ -8,4 +8,6 @@ void SH_CanComm_Task(void *pvParameters);
 void SH_Display_Task(void *pvParameters);
 void SH_SecurityEvent_Task(void *pvParameters);
 
+void SH_Can_Init(void);
+
 #endif /* SH_TASKS_H */

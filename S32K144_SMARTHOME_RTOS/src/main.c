@@ -38,6 +38,7 @@ int main(void)
     xTaskCreate(SH_ButtonInput_Task, "Button", 256, NULL, 6, NULL);
     xTaskCreate(SH_Display_Task, "Display", 256, NULL, 3, NULL);
     xTaskCreate(SH_SecurityEvent_Task, "Security", 256, NULL, 7, NULL);
+    xTaskCreate(SH_CanComm_Task, "CAN", 256, NULL, 4, NULL);
 
     /* RTOS 스케줄러 시작 */
     vTaskStartScheduler();

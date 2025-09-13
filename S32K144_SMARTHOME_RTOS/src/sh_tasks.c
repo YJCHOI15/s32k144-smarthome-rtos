@@ -9,6 +9,7 @@
 #include "shh_system.h"
 #include "drivers/lpit_driver.h"
 #include "drivers/gpio_driver.h"
+#include "drivers/flexcan_driver.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,6 +45,7 @@ static void _handle_security_event(void);
 static void _run_monitoring_mode_logic(const sensor_data_t* data);
 static void _update_display(void);
 static void _security_led_timer_callback(void);
+static void _can_rx_callback(uint32_t id, uint8_t* data, uint8_t dlc);
 
 /********************************************************************/
 /************************ MainControlTask ***************************/
@@ -100,178 +102,6 @@ void SH_MainControl_Task(void *pvParameters) {
     }
 }
 
-/********************************************************************/
-/**************************** SensorTask ****************************/
-/********************************************************************/
-void SH_Sensor_Task(void *pvParameters) {
-
-    (void)pvParameters;
-    sensor_data_t sensor_data_to_send;
-
-    for (;;) {
-        // 1. 1000ms마다 주기적으로 실행
-        vTaskDelay(pdMS_TO_TICKS(1000));
-
-        // 2. HAL 함수를 호출하여 모든 센서 값을 읽어온다.
-        sensor_data_to_send.temperature = SHH_ReadTemperature();
-        sensor_data_to_send.humidity    = SHH_ReadHumidity();
-
-        // HAL 함수가 0-100% 값을 반환하므로, 0-4095 범위의 raw 값으로 역산합니다.
-        uint8_t cds_percent = SHH_ReadBrightnessSensor();
-        sensor_data_to_send.cds_raw = (uint16_t)((cds_percent * 4095) / 100);
-
-        uint8_t vr_percent = SHH_ReadManualControlVr();
-        sensor_data_to_send.vr_raw = (uint16_t)((vr_percent * 4095) / 100);
-
-        // 3. 수집된 데이터를 Sensor Data Queue로 전송한다.
-        // xQueueSend는 큐에 공간이 생길 때까지 기다리지 않고 즉시 반환될 수 있다.
-        // 이 경우 큐가 꽉 차지 않았다고 가정한다.
-        xQueueSend(g_sensor_data_queue, &sensor_data_to_send, 0);
-    }
-}
-
-/********************************************************************/
-/************************ ButtonInputTask ***************************/
-/********************************************************************/
-void SH_ButtonInput_Task(void *pvParameters) {
-
-    (void)pvParameters;
-    command_msg_t cmd_msg;
-
-    for (;;) {
-        // 1. 버튼 인터럽트가 발생할 때까지 Blocked
-        if (xSemaphoreTake(g_button_interrupt_semaphore, portMAX_DELAY) == pdTRUE) {
-            // 2. 채터링 방지를 위한 대기
-            vTaskDelay(pdMS_TO_TICKS(50));
-
-            // 3. 어떤 버튼이 눌렸는지 확인하고, 해당하는 명령을 생성합니다.
-            if (SHD_GPIO_ReadPin(PIN_BTN1) == 0) {
-                cmd_msg.command_id = CMD_BTN1_CYCLE_MODE;
-                xQueueSend(g_command_queue, &cmd_msg, 0);
-                SHH_Piezo_Beep();
-                // 버튼이 떼어질 때까지 기다려 다중 입력을 방지
-                while(SHD_GPIO_ReadPin(PIN_BTN1) == 0) { vTaskDelay(pdMS_TO_TICKS(20)); }
-            } else if (SHD_GPIO_ReadPin(PIN_BTN2) == 0) {
-                cmd_msg.command_id = CMD_BTN2_SELECT_DEVICE;
-                xQueueSend(g_command_queue, &cmd_msg, 0);
-                SHH_Piezo_Beep();
-                while(SHD_GPIO_ReadPin(PIN_BTN2) == 0) { vTaskDelay(pdMS_TO_TICKS(20)); }
-            } else if (SHD_GPIO_ReadPin(PIN_BTN3) == 0) {
-                cmd_msg.command_id = CMD_BTN3_DEVICE_ACTION_POSITIVE;
-                xQueueSend(g_command_queue, &cmd_msg, 0);
-                SHH_Piezo_Beep();
-                while(SHD_GPIO_ReadPin(PIN_BTN3) == 0) { vTaskDelay(pdMS_TO_TICKS(20)); }
-            } else if (SHD_GPIO_ReadPin(PIN_BTN4) == 0) {
-                cmd_msg.command_id = CMD_BTN4_DEVICE_ACTION_NEGATIVE;
-                xQueueSend(g_command_queue, &cmd_msg, 0);
-                SHH_Piezo_Beep();
-                while(SHD_GPIO_ReadPin(PIN_BTN4) == 0) { vTaskDelay(pdMS_TO_TICKS(20)); }
-            }
-        }
-    }
-}
-
-void PORTE_IRQHandler(void) {
-
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-
-    // 인터럽트가 발생했음을 ButtonInput_Task에 알린다 (세마포어 전달).
-    xSemaphoreGiveFromISR(g_button_interrupt_semaphore, &xHigherPriorityTaskWoken);
-
-    // 발생한 모든 핀의 인터럽트 플래그를 클리어한다.
-    PORTE->ISFR = 0xFFFFFFFF;
-
-    // 만약 세마포어 전달로 인해 더 높은 우선순위의 태스크가 깨어났다면,
-    // 즉시 컨텍스트 스위칭을 요청한다.
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}
-
-/********************************************************************/
-/**************************** CanCommTask ***************************/
-/********************************************************************/
-void SH_CanComm_Task(void *pvParameters) {
-    (void)pvParameters;
-    for(;;); 
-}
-
-/********************************************************************/
-/**************************** DisplayTask ***************************/
-/********************************************************************/
-void SH_Display_Task(void *pvParameters) {
-
-    (void)pvParameters;
-    display_data_t received_data;
-
-    for (;;) {
-        // 1. Display Data Queue에 메시지가 들어올 때까지 4ms 동안 대기한다.
-        //    메시지가 없더라도 FND 스캔을 위해 주기적으로 깨어난다.
-        if (xQueueReceive(g_display_data_queue, &received_data, pdMS_TO_TICKS(4)) == pdTRUE) {
-            // 2. 메시지를 수신
-            // FND 업데이트
-            uint32_t fnd_number = (uint32_t)atoi(received_data.fnd_string);
-            SHH_FND_NumberParsing(fnd_number);
-
-            // OLED 업데이트 (이전 내용 덮어쓰기)
-            SHH_OLED_PrintString(0, 0, received_data.oled_string);
-        }
-
-        // 3. 루프를 돌 때마다 FND의 한 자릿수를 스캔하여 잔상 효과를 만든다.
-        SHH_FND_Display();
-    }
-}
-
-/********************************************************************/
-/************************ SecurityEventTask *************************/
-/********************************************************************/
-void SH_SecurityEvent_Task(void *pvParameters) {
-
-    (void)pvParameters;
-
-    for (;;) {
-        // 1. 데이터시트 권장사항(60ms 이상)에 따라 100ms마다 측정 사이클 실행
-        vTaskDelay(pdMS_TO_TICKS(100));
-
-        // 2. 현재 시스템이 보안 모드일 때만 거리 측정 수행
-        xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
-        bool is_security_mode = (g_system_status.current_mode == MODE_SECURITY);
-        xSemaphoreGive(g_system_status_mutex);
-
-        if (is_security_mode)
-        {
-            // 2. 거리 측정 시작 (이 함수는 즉시 반환됨)
-            SHH_uWave_StartMeasurement();
-
-            // 3. 측정 완료 인터럽트를 기다림 (최대 50ms 타임아웃)
-            if (xSemaphoreTake(g_uWave_semaphore, pdMS_TO_TICKS(50)) == pdTRUE) {
-
-                // 4. 신호 수신 시 거리 값을 가져와서 판단
-                uint16_t distance_cm = SHH_uWave_GetDistanceCm();
-
-                if ((distance_cm != 0xFFFF) && (distance_cm < SECURITY_DISTANCE_THRESHOLD_CM)) {
-                    xEventGroupSetBits(g_security_event_group, 0x01);
-                }
-            }
-        }
-    }
-}
-
-void PORTC_IRQHandler(void) {
-
-    // Echo 핀에서 인터럽트가 발생했는지 확인
-    if ((PORTC->ISFR & (1UL << 13)))
-    {
-        // HAL에 있는 핸들러 호출
-        SHH_uWave_Echo_ISR_Handler();
-    }
-
-    // 발생한 모든 핀의 인터럽트 플래그를 클리어
-    // 주의: 다른 PORTC 인터럽트 소스가 있다면, 해당 플래그만 선택적으로 클리어해야 함
-    PORTC->ISFR = 0xFFFFFFFF;
-}
-
-/********************************************************************/
-/************************* 내부 함수 정의 ********************* ******/
-/********************************************************************/
 static void _handle_command(command_msg_t* cmd) {
 
     // 현재 시스템 상태 읽어옴
@@ -482,4 +312,238 @@ static void _update_display(void) {
 
     // 4. 완성된 메시지를 Display Task로 전송
     xQueueSend(g_display_data_queue, &msg, 0);
+}
+
+/********************************************************************/
+/**************************** SensorTask ****************************/
+/********************************************************************/
+void SH_Sensor_Task(void *pvParameters) {
+
+    (void)pvParameters;
+    sensor_data_t sensor_data_to_send;
+
+    for (;;) {
+        // 1. 1000ms마다 주기적으로 실행
+        vTaskDelay(pdMS_TO_TICKS(1000));
+
+        // 2. HAL 함수를 호출하여 모든 센서 값을 읽어온다.
+        sensor_data_to_send.temperature = SHH_ReadTemperature();
+        sensor_data_to_send.humidity    = SHH_ReadHumidity();
+
+        // HAL 함수가 0-100% 값을 반환하므로, 0-4095 범위의 raw 값으로 역산합니다.
+        uint8_t cds_percent = SHH_ReadBrightnessSensor();
+        sensor_data_to_send.cds_raw = (uint16_t)((cds_percent * 4095) / 100);
+
+        uint8_t vr_percent = SHH_ReadManualControlVr();
+        sensor_data_to_send.vr_raw = (uint16_t)((vr_percent * 4095) / 100);
+
+        // 3. 수집된 데이터를 Sensor Data Queue로 전송한다.
+        // xQueueSend는 큐에 공간이 생길 때까지 기다리지 않고 즉시 반환될 수 있다.
+        // 이 경우 큐가 꽉 차지 않았다고 가정한다.
+        xQueueSend(g_sensor_data_queue, &sensor_data_to_send, 0);
+    }
+}
+
+/********************************************************************/
+/************************ ButtonInputTask ***************************/
+/********************************************************************/
+void SH_ButtonInput_Task(void *pvParameters) {
+
+    (void)pvParameters;
+    command_msg_t cmd_msg;
+
+    for (;;) {
+        // 1. 버튼 인터럽트가 발생할 때까지 Blocked
+        if (xSemaphoreTake(g_button_interrupt_semaphore, portMAX_DELAY) == pdTRUE) {
+            // 2. 채터링 방지를 위한 대기
+            vTaskDelay(pdMS_TO_TICKS(50));
+
+            // 3. 어떤 버튼이 눌렸는지 확인하고, 해당하는 명령을 생성합니다.
+            if (SHD_GPIO_ReadPin(PIN_BTN1) == 0) {
+                cmd_msg.command_id = CMD_BTN1_CYCLE_MODE;
+                xQueueSend(g_command_queue, &cmd_msg, 0);
+                SHH_Piezo_Beep();
+                // 버튼이 떼어질 때까지 기다려 다중 입력을 방지
+                while(SHD_GPIO_ReadPin(PIN_BTN1) == 0) { vTaskDelay(pdMS_TO_TICKS(20)); }
+            } else if (SHD_GPIO_ReadPin(PIN_BTN2) == 0) {
+                cmd_msg.command_id = CMD_BTN2_SELECT_DEVICE;
+                xQueueSend(g_command_queue, &cmd_msg, 0);
+                SHH_Piezo_Beep();
+                while(SHD_GPIO_ReadPin(PIN_BTN2) == 0) { vTaskDelay(pdMS_TO_TICKS(20)); }
+            } else if (SHD_GPIO_ReadPin(PIN_BTN3) == 0) {
+                cmd_msg.command_id = CMD_BTN3_DEVICE_ACTION_POSITIVE;
+                xQueueSend(g_command_queue, &cmd_msg, 0);
+                SHH_Piezo_Beep();
+                while(SHD_GPIO_ReadPin(PIN_BTN3) == 0) { vTaskDelay(pdMS_TO_TICKS(20)); }
+            } else if (SHD_GPIO_ReadPin(PIN_BTN4) == 0) {
+                cmd_msg.command_id = CMD_BTN4_DEVICE_ACTION_NEGATIVE;
+                xQueueSend(g_command_queue, &cmd_msg, 0);
+                SHH_Piezo_Beep();
+                while(SHD_GPIO_ReadPin(PIN_BTN4) == 0) { vTaskDelay(pdMS_TO_TICKS(20)); }
+            }
+        }
+    }
+}
+
+void PORTE_IRQHandler(void) {
+
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // 인터럽트가 발생했음을 ButtonInput_Task에 알린다 (세마포어 전달).
+    xSemaphoreGiveFromISR(g_button_interrupt_semaphore, &xHigherPriorityTaskWoken);
+
+    // 발생한 모든 핀의 인터럽트 플래그를 클리어한다.
+    PORTE->ISFR = 0xFFFFFFFF;
+
+    // 만약 세마포어 전달로 인해 더 높은 우선순위의 태스크가 깨어났다면,
+    // 즉시 컨텍스트 스위칭을 요청한다.
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+/********************************************************************/
+/**************************** CanCommTask ***************************/
+/********************************************************************/
+void SH_Can_Init(void) {
+    SHD_CAN0_RegisterRxCallback(_can_rx_callback);
+}
+
+void SH_CanComm_Task(void *pvParameters) {
+
+    (void)pvParameters;
+    uint8_t can_data_buffer[8];
+
+    for (;;) {
+
+        // 1. 500ms마다 주기적으로 실행
+        vTaskDelay(pdMS_TO_TICKS(500));
+
+        // 2. 뮤텍스로 보호하며 현재 시스템 상태와 센서 데이터를 읽어옴
+        xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
+        system_status_t current_status = g_system_status;
+        sensor_data_t current_sensor_data = g_latest_sensor_data;
+        xSemaphoreGive(g_system_status_mutex);
+
+        // 3. 환경 데이터 CAN 메시지 전송
+        can_data_buffer[0] = current_sensor_data.temperature;
+        can_data_buffer[1] = current_sensor_data.humidity;
+        can_data_buffer[2] = (uint8_t)(current_sensor_data.cds_raw >> 8); // 상위 8비트
+        can_data_buffer[3] = (uint8_t)(current_sensor_data.cds_raw & 0xFF); // 하위 8비트
+        SHD_CAN0_Transmit(CAN_ID_STATUS_ENV, can_data_buffer, 4);
+
+        // 4. 시스템 상태 CAN 메시지 전송
+        can_data_buffer[0] = (uint8_t)current_status.current_mode;
+        can_data_buffer[1] = (uint8_t)current_status.is_alarm_active;
+        SHD_CAN0_Transmit(CAN_ID_STATUS_SYSTEM, can_data_buffer, 2);
+    }
+}
+
+static void _can_rx_callback(uint32_t id, uint8_t* data, uint8_t dlc) {
+
+    command_msg_t cmd_msg;
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    switch(id) {
+
+        case CAN_ID_CMD_SET_MODE:
+            if (dlc > 0) {
+                cmd_msg.command_id = CAN_ID_CMD_SET_MODE;
+                cmd_msg.value = data[0]; // 모드 값
+                xQueueSendFromISR(g_command_queue, &cmd_msg, &xHigherPriorityTaskWoken);
+            }
+            break;
+
+        case CAN_ID_CMD_ALARM_OFF:
+            cmd_msg.command_id = CAN_ID_CMD_ALARM_OFF;
+            cmd_msg.value = 0;
+            xQueueSendFromISR(g_command_queue, &cmd_msg, &xHigherPriorityTaskWoken);
+            break;
+            
+        case CAN_ID_CMD_DEVICE_CTRL:
+            if (dlc > 1) {
+                cmd_msg.command_id = CAN_ID_CMD_DEVICE_CTRL;
+                // value에 장치 ID와 동작 값을 압축하여 전달
+                cmd_msg.value = (int32_t)((data[1] << 8) | data[0]);
+                xQueueSendFromISR(g_command_queue, &cmd_msg, &xHigherPriorityTaskWoken);
+            }
+            break;
+    }
+    
+    // 만약 큐 전송으로 인해 더 높은 우선순위의 태스크가 깨어났다면,
+    // ISR 종료 후 즉시 컨텍스트 스위칭을 수행합니다.
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+/********************************************************************/
+/**************************** DisplayTask ***************************/
+/********************************************************************/
+void SH_Display_Task(void *pvParameters) {
+
+    (void)pvParameters;
+    display_data_t received_data;
+
+    for (;;) {
+        // 1. Display Data Queue에 메시지가 들어올 때까지 4ms 동안 대기한다.
+        //    메시지가 없더라도 FND 스캔을 위해 주기적으로 깨어난다.
+        if (xQueueReceive(g_display_data_queue, &received_data, pdMS_TO_TICKS(4)) == pdTRUE) {
+            // 2. 메시지를 수신
+            // FND 업데이트
+            uint32_t fnd_number = (uint32_t)atoi(received_data.fnd_string);
+            SHH_FND_NumberParsing(fnd_number);
+
+            // OLED 업데이트 (이전 내용 덮어쓰기)
+            SHH_OLED_PrintString(0, 0, received_data.oled_string);
+        }
+
+        // 3. 루프를 돌 때마다 FND의 한 자릿수를 스캔하여 잔상 효과를 만든다.
+        SHH_FND_Display();
+    }
+}
+
+/********************************************************************/
+/************************ SecurityEventTask *************************/
+/********************************************************************/
+void SH_SecurityEvent_Task(void *pvParameters) {
+
+    (void)pvParameters;
+
+    for (;;) {
+        // 1. 데이터시트 권장사항(60ms 이상)에 따라 100ms마다 측정 사이클 실행
+        vTaskDelay(pdMS_TO_TICKS(100));
+
+        // 2. 현재 시스템이 보안 모드일 때만 거리 측정 수행
+        xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
+        bool is_security_mode = (g_system_status.current_mode == MODE_SECURITY);
+        xSemaphoreGive(g_system_status_mutex);
+
+        if (is_security_mode)
+        {
+            // 2. 거리 측정 시작 (이 함수는 즉시 반환됨)
+            SHH_uWave_StartMeasurement();
+
+            // 3. 측정 완료 인터럽트를 기다림 (최대 50ms 타임아웃)
+            if (xSemaphoreTake(g_uWave_semaphore, pdMS_TO_TICKS(50)) == pdTRUE) {
+
+                // 4. 신호 수신 시 거리 값을 가져와서 판단
+                uint16_t distance_cm = SHH_uWave_GetDistanceCm();
+
+                if ((distance_cm != 0xFFFF) && (distance_cm < SECURITY_DISTANCE_THRESHOLD_CM)) {
+                    xEventGroupSetBits(g_security_event_group, 0x01);
+                }
+            }
+        }
+    }
+}
+
+void PORTC_IRQHandler(void) {
+
+    // Echo 핀에서 인터럽트가 발생했는지 확인
+    if ((PORTC->ISFR & (1UL << 13)))
+    {
+        // HAL에 있는 핸들러 호출
+        SHH_uWave_Echo_ISR_Handler();
+    }
+
+    // 발생한 모든 핀의 인터럽트 플래그를 클리어
+    // 주의: 다른 PORTC 인터럽트 소스가 있다면, 해당 플래그만 선택적으로 클리어해야 함
+    PORTC->ISFR = 0xFFFFFFFF;
 }
