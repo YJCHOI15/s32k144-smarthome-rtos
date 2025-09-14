@@ -7,12 +7,16 @@
 #include "shh_sensor.h"
 #include "shh_sound.h"
 #include "shh_system.h"
+#include "shh_uart.h"
+
 #include "drivers/lpit_driver.h"
 #include "drivers/gpio_driver.h"
 #include "drivers/flexcan_driver.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include "timers.h"
+
+TimerHandle_t g_fnd_timer;
+
 
 /************************ RTOS 객체 핸들러 정의 *******************/
 QueueHandle_t g_command_queue;
@@ -21,14 +25,19 @@ QueueHandle_t g_display_data_queue;
 SemaphoreHandle_t g_system_status_mutex;
 SemaphoreHandle_t g_button_interrupt_semaphore;
 SemaphoreHandle_t g_uWave_semaphore;
+SemaphoreHandle_t g_uart_mutex;
 EventGroupHandle_t g_security_event_group;
+
 
 /************************** 전역 변수 정의 ************************/
 // 시스템의 현재 상태를 저장
-static system_status_t g_system_status;
+static volatile system_status_t g_system_status;
 
 // 가장 최근에 수신된 센서 데이터를 저장
-static sensor_data_t g_latest_sensor_data;
+static volatile sensor_data_t g_latest_sensor_data;
+
+// 최근 데이터만 디스플레이에 반영
+volatile display_data_t g_display_data;
 
 // 수동 제어 모드에서 선택된 장치를 추적
 typedef enum {
@@ -36,7 +45,7 @@ typedef enum {
     DEVICE_STEP,
     DEVICE_RELAY
 } manual_device_t;
-static manual_device_t g_selected_device = DEVICE_SERVO;
+static volatile manual_device_t g_selected_device = DEVICE_SERVO;
 
 /*************** 수신 이벤트 처리 내부 헬퍼 함수 선언 ***************/
 static void _handle_command(command_msg_t* cmd);
@@ -46,6 +55,7 @@ static void _run_monitoring_mode_logic(const sensor_data_t* data);
 static void _update_display(void);
 static void _security_led_timer_callback(void);
 static void _can_rx_callback(uint32_t id, uint8_t* data, uint8_t dlc);
+static void vFndTimerCallback(TimerHandle_t xTimer);
 
 /********************************************************************/
 /************************ MainControlTask ***************************/
@@ -119,13 +129,13 @@ static void _handle_command(command_msg_t* cmd) {
                 xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
                 if (current_mode == MODE_MONITORING) {
                     g_system_status.current_mode = MODE_MANUAL;
-                    SHH_SecurityWarningLED_Off();
+                    SHH_SecurityStandbyLED_Off();
                 } else if (current_mode == MODE_MANUAL) {
                     g_system_status.current_mode = MODE_SECURITY;
                     SHH_SecurityStandbyLED_On(); 
                 } else if (current_mode == MODE_SECURITY) {
-                    g_system_status.current_mode = MODE_MANUAL;
-                    SHH_SecurityWarningLED_Off();
+                    g_system_status.current_mode = MODE_MONITORING;
+                    SHH_SecurityStandbyLED_Off();
                 }
                 SHH_ModeLED_Set(g_system_status.current_mode);
                 xSemaphoreGive(g_system_status_mutex);
@@ -227,6 +237,16 @@ static void _handle_sensor_data(sensor_data_t* data) {
     // 최신 센서 데이터 업데이트
     g_latest_sensor_data = *data;
 
+    /************************ debug uart **************************/
+    // uint8_t brightness_percent = (uint8_t)((data->cds_raw * 100) / 4095);
+    // uint8_t vr_percent = (uint8_t)((data->vr_raw * 100) / 4095);
+    // SHH_Uart_Printf("[_handle_sensor_data] Temp: %dC, Humi: %d%%, Bright: %d%%, VR: %d%%\r\n",
+    //                 data->temperature,
+    //                 data->humidity,
+    //                 brightness_percent,
+    //                 vr_percent);
+    /***************************************************************/
+
     xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
     system_mode_t current_mode = g_system_status.current_mode;
     xSemaphoreGive(g_system_status_mutex);
@@ -273,8 +293,8 @@ static void _security_led_timer_callback(void) {
 }
 
 static void _run_monitoring_mode_logic(const sensor_data_t* data) {
+
     // 자동 팬 제어 (온도 기반)
-    // sh_config.h 와 같은 설정 파일에서 임계값을 관리하는 것이 더 좋습니다.
     if (data->temperature > TEMP_THRESHOLD) {
         SHH_Fan_On();
     } else {
@@ -288,30 +308,29 @@ static void _run_monitoring_mode_logic(const sensor_data_t* data) {
 
 static void _update_display(void) {
 
-    display_data_t msg;
-
     // 1. FND 문자열 포맷팅
     uint8_t brightness = (g_latest_sensor_data.cds_raw * 100) / 4095;
-    snprintf(msg.fnd_string, 7, "%02d%02d%02d", g_latest_sensor_data.temperature, g_latest_sensor_data.humidity, brightness);
+    if (brightness == 100) brightness = 99;
+    g_display_data.fnd_number = (g_latest_sensor_data.temperature * 10000) 
+                    + (g_latest_sensor_data.humidity * 100) 
+                    + brightness;
 
-    // 2. OLED 포맷팅 (현재 모드 기준)
-    xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
-    system_mode_t current_mode = g_system_status.current_mode;
-    xSemaphoreGive(g_system_status_mutex);
+    // // 2. OLED 포맷팅 (현재 모드 기준)
+    // xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
+    // system_mode_t current_mode = g_system_status.current_mode;
+    // xSemaphoreGive(g_system_status_mutex);
 
-    if (current_mode == MODE_MANUAL) {
+    // if (current_mode == MODE_MANUAL) {
 
-        switch(g_selected_device) {
-            case DEVICE_SERVO: snprintf(msg.oled_string, 20, "Selected: DoorLock"); break;
-            case DEVICE_STEP:  snprintf(msg.oled_string, 20, "Selected: Blinds");   break;
-            case DEVICE_RELAY: snprintf(msg.oled_string, 20, "Selected: ExtPower"); break;
-        }
-    } else {
-        snprintf(msg.oled_string, 20, "Mode: %s", (current_mode == MODE_MONITORING) ? "Monitoring" : "Security");
-    }
+    //     switch(g_selected_device) {
+    //         case DEVICE_SERVO: snprintf(msg.oled_string, 20, "Selected: DoorLock"); break;
+    //         case DEVICE_STEP:  snprintf(msg.oled_string, 20, "Selected: Blinds");   break;
+    //         case DEVICE_RELAY: snprintf(msg.oled_string, 20, "Selected: ExtPower"); break;
+    //     }
+    // } else {
+    //     snprintf(msg.oled_string, 20, "Mode: %s", (current_mode == MODE_MONITORING) ? "Monitoring" : "Security");
+    // }
 
-    // 4. 완성된 메시지를 Display Task로 전송
-    xQueueSend(g_display_data_queue, &msg, 0);
 }
 
 /********************************************************************/
@@ -330,13 +349,13 @@ void SH_Sensor_Task(void *pvParameters) {
         sensor_data_to_send.temperature = SHH_ReadTemperature();
         sensor_data_to_send.humidity    = SHH_ReadHumidity();
 
-        // HAL 함수가 0-100% 값을 반환하므로, 0-4095 범위의 raw 값으로 역산합니다.
+        // HAL 함수가 0-100% 값을 반환하므로, 0-4095 범위의 raw 값으로 역산한다.
         uint8_t cds_percent = SHH_ReadBrightnessSensor();
         sensor_data_to_send.cds_raw = (uint16_t)((cds_percent * 4095) / 100);
 
         uint8_t vr_percent = SHH_ReadManualControlVr();
         sensor_data_to_send.vr_raw = (uint16_t)((vr_percent * 4095) / 100);
-
+        
         // 3. 수집된 데이터를 Sensor Data Queue로 전송한다.
         // xQueueSend는 큐에 공간이 생길 때까지 기다리지 않고 즉시 반환될 수 있다.
         // 이 경우 큐가 꽉 차지 않았다고 가정한다.
@@ -351,7 +370,7 @@ void SH_ButtonInput_Task(void *pvParameters) {
 
     (void)pvParameters;
     command_msg_t cmd_msg;
-
+    
     for (;;) {
         // 1. 버튼 인터럽트가 발생할 때까지 Blocked
         if (xSemaphoreTake(g_button_interrupt_semaphore, portMAX_DELAY) == pdTRUE) {
@@ -392,12 +411,12 @@ void PORTE_IRQHandler(void) {
     // 인터럽트가 발생했음을 ButtonInput_Task에 알린다 (세마포어 전달).
     xSemaphoreGiveFromISR(g_button_interrupt_semaphore, &xHigherPriorityTaskWoken);
 
-    // 발생한 모든 핀의 인터럽트 플래그를 클리어한다.
-    PORTE->ISFR = 0xFFFFFFFF;
+    // 버튼 핀만 클리어
+    PORTE->ISFR = (1 << 13) | (1 << 14) | (1 << 15) | (1 << 16);
 
     // 만약 세마포어 전달로 인해 더 높은 우선순위의 태스크가 깨어났다면,
     // 즉시 컨텍스트 스위칭을 요청한다.
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 /********************************************************************/
@@ -423,11 +442,13 @@ void SH_CanComm_Task(void *pvParameters) {
         sensor_data_t current_sensor_data = g_latest_sensor_data;
         xSemaphoreGive(g_system_status_mutex);
 
+        // 아래 코드 주석 -> FND 됨, 버튼 안됨 
+        // 아래 코드 주석 해제 -> FND 안됨, 버튼 잘됨
         // 3. 환경 데이터 CAN 메시지 전송
         can_data_buffer[0] = current_sensor_data.temperature;
         can_data_buffer[1] = current_sensor_data.humidity;
-        can_data_buffer[2] = (uint8_t)(current_sensor_data.cds_raw >> 8); // 상위 8비트
-        can_data_buffer[3] = (uint8_t)(current_sensor_data.cds_raw & 0xFF); // 하위 8비트
+        can_data_buffer[2] = (uint8_t)(current_sensor_data.cds_raw >> 8);
+        can_data_buffer[3] = (uint8_t)(current_sensor_data.cds_raw & 0xFF);
         SHD_CAN0_Transmit(CAN_ID_STATUS_ENV, can_data_buffer, 4);
 
         // 4. 시스템 상태 CAN 메시지 전송
@@ -479,24 +500,31 @@ static void _can_rx_callback(uint32_t id, uint8_t* data, uint8_t dlc) {
 void SH_Display_Task(void *pvParameters) {
 
     (void)pvParameters;
-    display_data_t received_data;
+
+    // FND 스캔용 소프트웨어 타이머 생성 (주기: 1ms) -> OLED도 쓸지 미정
+    g_fnd_timer = xTimerCreate(
+        "FndTimer",                   // 타이머 이름
+        pdMS_TO_TICKS(1),             // 주기 (1ms)
+        pdTRUE,                       // 자동 재로드 (계속 반복)
+        (void*)0,                     // 타이머 ID (사용 안함)
+        vFndTimerCallback             // 콜백 함수
+    );
+
+    if (g_fnd_timer != NULL) {
+        xTimerStart(g_fnd_timer, 0);
+    }
 
     for (;;) {
-        // 1. Display Data Queue에 메시지가 들어올 때까지 4ms 동안 대기한다.
-        //    메시지가 없더라도 FND 스캔을 위해 주기적으로 깨어난다.
-        if (xQueueReceive(g_display_data_queue, &received_data, pdMS_TO_TICKS(4)) == pdTRUE) {
-            // 2. 메시지를 수신
-            // FND 업데이트
-            uint32_t fnd_number = (uint32_t)atoi(received_data.fnd_string);
-            SHH_FND_NumberParsing(fnd_number);
+        // 최신 값 반영만 수행
+        SHH_FND_BufferUpdate(g_display_data.fnd_number);
 
-            // OLED 업데이트 (이전 내용 덮어쓰기)
-            SHH_OLED_PrintString(0, 0, received_data.oled_string);
-        }
-
-        // 3. 루프를 돌 때마다 FND의 한 자릿수를 스캔하여 잔상 효과를 만든다.
-        SHH_FND_Display();
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
+}
+
+static void vFndTimerCallback(TimerHandle_t xTimer) {
+    (void)xTimer;
+    SHH_FND_Display();   // 1자릿수 스캔
 }
 
 /********************************************************************/
@@ -537,8 +565,8 @@ void SH_SecurityEvent_Task(void *pvParameters) {
 void PORTC_IRQHandler(void) {
 
     // Echo 핀에서 인터럽트가 발생했는지 확인
-    if ((PORTC->ISFR & (1UL << 13)))
-    {
+    if ((PORTC->ISFR & (1UL << 13))) {
+        
         // HAL에 있는 핸들러 호출
         SHH_uWave_Echo_ISR_Handler();
     }

@@ -1,6 +1,10 @@
+#include "sh_config.h" 
+
 #include "shh_system.h"
 #include "shh_display.h"
-#include "sh_config.h" 
+#include "shh_led.h"
+#include "shh_display.h"
+
 #include "drivers/system_init.h"
 #include "drivers/port_driver.h"
 #include "drivers/gpio_driver.h"
@@ -41,7 +45,7 @@ void SHH_Init(void)
     SHD_PORT_SetPinMux(PIN_BTN3, PORT_MUX_GPIO);
     SHD_PORT_SetPinMux(PIN_BTN4, PORT_MUX_GPIO);
 
-    SHD_PORT_SetPinMux(PIN_FTM0_CH1_LED8, PORT_MUX_ALT_3);
+    SHD_PORT_SetPinMux(PIN_FTM0_CH6_LED8, PORT_MUX_ALT_2);
     SHD_PORT_SetPinMux(PIN_FTM0_CH2_SERVO, PORT_MUX_ALT_4);
 
     SHD_PORT_SetPinMux(PIN_LED_RED, PORT_MUX_GPIO);
@@ -138,12 +142,12 @@ void SHH_Init(void)
     // 나머지 드라이버 초기화
     SHD_ADC0_Init();
     SHD_FTM0_Init();
-    SHD_FTM0_InitPwmChannel(1); // FTM0_CH1 (LED 8)
+    SHD_FTM0_InitPwmChannel(6); // FTM0_CH6 (LED 8)
     SHD_FTM0_InitPwmChannel(2); // FTM0_CH2 (Servo)
     SHD_LPI2C0_Init();
     SHD_CAN0_Init();
     SHD_LPIT0_Init();
-    SHD_LPUART1_Init(115200);
+    SHD_LPUART1_Init(9600);
 
     /* 5. 인터럽트 설정 및 활성화 (+lpit0 타이머 주기 설정) */
     // 핀 인터럽트 설정
@@ -155,27 +159,28 @@ void SHH_Init(void)
 
     // NVIC 인터럽트 활성화 및 우선순위 설정
     SHD_IT_EnableIRQ(PORTC_IRQn);             // uWave-echo(PTC13)
-    SHD_IT_SetPriority(PORTC_IRQn, 5);
+    SHD_IT_SetPriority(PORTC_IRQn, 6);
 
     SHD_IT_EnableIRQ(PORTE_IRQn);             // 버튼(PTE13-16)
-    SHD_IT_SetPriority(PORTE_IRQn, 10);
+    SHD_IT_SetPriority(PORTE_IRQn, 8);
 
     SHD_IT_EnableIRQ(CAN0_ORed_0_15_MB_IRQn); // CAN0 수신
-    SHD_IT_SetPriority(CAN0_ORed_0_15_MB_IRQn, 5);
+    SHD_IT_SetPriority(CAN0_ORed_0_15_MB_IRQn, 6);
 
-    SHD_IT_EnableIRQ(LPIT0_Ch0_IRQn);         //
-    SHD_IT_SetPriority(LPIT0_Ch0_IRQn, 12);
+    // SHD_IT_EnableIRQ(LPIT0_Ch0_IRQn);         
+    // SHD_IT_SetPriority(LPIT0_Ch0_IRQn, 10);
 
     SHD_IT_EnableIRQ(LPIT0_Ch1_IRQn);         // CAN 500ms Broadcast
-    SHD_IT_SetPriority(LPIT0_Ch1_IRQn, 12);
+    SHD_IT_SetPriority(LPIT0_Ch1_IRQn, 10);
 
     SHD_IT_EnableIRQ(LPIT0_Ch2_IRQn);         // 1초 보안 경고 상태 LED
-    SHD_IT_SetPriority(LPIT0_Ch2_IRQn, 12);
+    SHD_IT_SetPriority(LPIT0_Ch2_IRQn, 10);
 
     // SHD_IT_EnableIRQ(LPIT0_Ch3_IRQn);         // us 딜레이 함수
     // SHD_IT_SetPriority(LPIT0_Ch3_IRQn, 12);
 
     /* 6. SHH 계층 초기화 */
+    SHH_LEDs_Init();
     SHH_Display_Init(); 
 
 }

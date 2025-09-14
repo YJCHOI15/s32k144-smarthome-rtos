@@ -5,6 +5,7 @@
         "sh_config.h": "c",
         "ftm_driver.h": "c",
         "shh_sound.h": "c",
-        "freertosconfig.h": "c"
+        "freertosconfig.h": "c",
+        "lpit_driver.h": "c"
     }
 }

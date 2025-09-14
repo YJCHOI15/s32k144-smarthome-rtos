@@ -9,6 +9,7 @@ void SHD_LPUART1_Init(uint32_t baud_rate) {
     uint16_t sbr; // Baud Rate Modulo Divisor
 
     /* 1. LPUART1 모듈에 클럭 활성화 (SOSCDIV2_CLK, 8MHz) */
+    PCC->PCCn[PCC_LPUART1_INDEX] &= ~PCC_PCCn_CGC_MASK; /* Disable clock to change PCS */
     PCC->PCCn[PCC_LPUART1_INDEX] = PCC_PCCn_PCS(1)      /* PCS=1: Select SOSCDIV2_CLK */
                                  | PCC_PCCn_CGC_MASK; /* CGC=1: Clock enabled */
 
@@ -17,13 +18,16 @@ void SHD_LPUART1_Init(uint32_t baud_rate) {
 
     /* 3. Baud Rate 설정 */
     /* Baud Rate = LPUART_CLK / ((OSR + 1) * SBR)
-     * OSR(Oversampling Ratio)는 16배(기본값 15+1)로 가정
+     * OSR(Oversampling Ratio)는 16배(값 15)로 설정합니다.
      * SBR = LPUART_CLK / (Baud Rate * 16)
+     * 예시 (9600 bps): SBR = 8,000,000 / (9600 * 16) = 52.08 -> 52
+     * 예시 (115200 bps): SBR = 8,000,000 / (115200 * 16) = 4.34 -> 4 (오차율이 높을 수 있음)
      */
     sbr = (uint16_t)(LPUART1_CLK_FREQ / (baud_rate * 16));
 
-    /* BAUD 레지스터에 SBR 값 설정 */
-    LPUART1->BAUD = LPUART_BAUD_SBR(sbr);
+    /* BAUD 레지스터에 SBR 값과 OSR 값을 함께 설정한다. */
+    LPUART1->BAUD = LPUART_BAUD_SBR(sbr) | LPUART_BAUD_OSR(15);
+    LPUART1->BAUD &= ~LPUART_BAUD_SBNS_MASK;
 
     /* 4. 컨트롤 레지스터 설정: 8-N-1 */
     /* 8 데이터 비트, 패리티 없음, 1 스톱 비트, 인터럽트 비활성화 */
@@ -37,6 +41,7 @@ void SHD_LPUART1_Init(uint32_t baud_rate) {
  * LPUART1을 통해 문자열을 전송한다.
  */
 void SHD_LPUART1_WriteString(const char* str) {
+    
     while (*str != '\0') {
         /* 1. Transmit Data Register Empty (TDRE) 플래그 대기 */
         while (!((LPUART1->STAT) & LPUART_STAT_TDRE_MASK));

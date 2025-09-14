@@ -3,30 +3,14 @@
 #include "drivers/gpio_driver.h"
 #include "drivers/adc_driver.h"
 #include "drivers/lpit_driver.h"
+#include "shh_uart.h"
 
-
-/**
- * DHT11 온습도 센서 통신과정 
- * 1. 통신개시 알림: mcu가 센서로 18ms 동안 LOW 유지하고 
- *                  HIGH로 전환해서 20-40ms 기다림
- *                  이 신호를 받으면 DHT11는 대기상태에서 깨어남
- * 2. 응답신호: DHT11가 대기상태에서 깨어나 80us LOW 신호 보내고
- *             다시 80us HIGH를 보냄으로써 준비가 됐음을 mcu에 알림
- * 3. 온습도 정보 송신: DHT11가 40bit의 데이터열을 보낸다.
- *                     HIGH 26~28us : 0
- *                     LOW  70us    : 1    -> HIGH의 길이로 0, 1 정의
- * 4. 데이터 수신 및 파싱: 습도(16bit) + 온도(16bit) + 체크섬(8bit) 수신
- *                        각 16비트의 상위 8비트가 값을 의미한다.
- *                        하위 8비트는 소수점이나 DHT11은 지원하지 않는다.
- *                        온습도 값을 더한 값이 체크섬인데 
- *                        일치하지 않으면 오류가 발생했음을 의미한다.  
- */
 
 /* 온습도 센서 통신을 위한 내부 함수 선언 */
 static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data);
 
-static uint8_t g_last_temperature = -99;
-static uint8_t g_last_humidity = -99;
+static uint8_t g_last_temperature = 0;
+static uint8_t g_last_humidity = 0;
 
 uint8_t SHH_ReadTemperature(void) {
 
@@ -52,39 +36,50 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
     uint8_t current_byte = 0;
     uint32_t timeout_counter;
 
-    // 1. 통신 시작 신호 (MCU -> DHT11)
+    /**
+     * DHT11 온습도 센서 통신과정 
+     * 1. 통신개시 알림: mcu가 센서로 18ms 동안 LOW 유지하고 
+     *                  HIGH로 전환해서 20-40ms 기다림
+     *                  이 신호를 받으면 DHT11는 대기상태에서 깨어남
+     * 2. 응답신호: DHT11가 대기상태에서 깨어나 80us LOW 신호 보내고
+     *             다시 80us HIGH를 보냄으로써 준비가 됐음을 mcu에 알림
+     * 3. 온습도 정보 송신: DHT11가 40bit의 데이터열을 보낸다.
+     *                     HIGH 26~28us : 0
+     *                     HIGH 70us    : 1    -> HIGH의 길이로 0, 1 정의
+     * 4. 데이터 수신 및 파싱: 습도(16bit) + 온도(16bit) + 체크섬(8bit) 수신
+     *                        각 16비트의 상위 8비트가 값을 의미한다.
+     *                        하위 8비트는 소수점이나 DHT11은 지원하지 않는다.
+     *                        온습도 값을 더한 값이 체크섬인데 
+     *                        일치하지 않으면 오류가 발생했음을 의미한다.  
+     */
+
+    // 1. 통신 시작 신호 (18ms Low -> 30us High)
     SHD_GPIO_InitPin(PIN_TEMP_HUMI, GPIO_OUTPUT);
     SHD_GPIO_WritePin(PIN_TEMP_HUMI, 0);
     SHD_LPIT0_DelayUs(3, 18000);
     SHD_GPIO_WritePin(PIN_TEMP_HUMI, 1);
-    SHD_LPIT0_DelayUs(3, 30);
+    SHD_LPIT0_DelayUs(3, 50);
     SHD_GPIO_InitPin(PIN_TEMP_HUMI, GPIO_INPUT);
 
 
-    // 2. DHT11 응답 신호 확인 (DHT11 -> MCU)
+    // 2. DHT11 응답 신호 확인 (80us Low -> 80us High)
     timeout_counter = 100;
     while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1) {
-        if (timeout_counter-- == 0) return false; 
+        if (timeout_counter-- == 0) return false;
         SHD_LPIT0_DelayUs(3, 1);
     }
     timeout_counter = 100;
     while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 0) {
-        if (timeout_counter-- == 0) return false; 
-        SHD_LPIT0_DelayUs(3, 1);
-    }
-    // 데이터 전송 시작을 위해 핀이 다시 Low가 될 때까지 대기
-    timeout_counter = 100;
-    while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1) {
-        if (timeout_counter-- == 0) return false; 
+        if (timeout_counter-- == 0) return false;
         SHD_LPIT0_DelayUs(3, 1);
     }
 
-    // 3. 40비트 데이터 수신 (DHT11 -> MCU)
+    // 3. 40비트 데이터 수신 (각 비트 50us Low -> 26~28us (0) / 70us High (1))
     for (int i = 0; i < 40; i++) {
         // 비트 시작 (Low)
         timeout_counter = 100;
         while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 0) {
-            if (timeout_counter-- == 0) return false; 
+            if (timeout_counter-- == 0) return false;
             SHD_LPIT0_DelayUs(3, 1);
         }
 
@@ -93,14 +88,14 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
         while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1) {
             high_duration++;
             SHD_LPIT0_DelayUs(3, 1);
-            if (high_duration > 200) return false; 
+            if (high_duration > 100) return false;
         }
 
         // 왼쪽 시프트로 비트 자리 마련
         current_byte <<= 1;
         
         // 26-28us보다 길면 1, 짧으면 0
-        if (high_duration > 40) {
+        if (high_duration > 50) {
             current_byte |= 1;
         }
 

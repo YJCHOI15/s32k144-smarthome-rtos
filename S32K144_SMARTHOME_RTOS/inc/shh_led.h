@@ -4,9 +4,7 @@
 #include "sh_config.h"
 
 
-/* 전원 LED 제어 */
-void SHH_PowerLED_On(void);
-void SHH_PowerLED_Off(void);
+void SHH_LEDs_Init(void);
 
 /* 현재 시스템 모드에 따라 RGB LED 제어 */
 void SHH_ModeLED_Set(system_mode_t mode);

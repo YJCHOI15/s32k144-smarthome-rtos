@@ -1,34 +1,31 @@
 #include "drivers/adc_driver.h"
+#include "shh_uart.h"
 
 /**
  * ADC0 모듈을 초기화하고 calibration을 수행한다.
  */
 void SHD_ADC0_Init(void) {
 
-    /* 1. ADC0 모듈에 클럭(SOSCDIV2_CLK) 활성화 */
     PCC->PCCn[PCC_ADC0_INDEX] &= ~PCC_PCCn_CGC_MASK; /* Disable clock to change PCS */
     PCC->PCCn[PCC_ADC0_INDEX] |= PCC_PCCn_PCS(1);    /* PCS=1: Select SOSCDIV2_CLK */
     PCC->PCCn[PCC_ADC0_INDEX] |= PCC_PCCn_CGC_MASK;  /* Enable clock for ADC0 */
 
-    /* 2. ADC Calibration 사전 설정: 32 샘플 평균 활성화 */
-    ADC0->SC3 = ADC_SC3_AVGE_MASK     // AVGE=1: 하드웨어 평균 기능 활성화 
-              | ADC_SC3_AVGS(2);      // AVGS=2: 32개 샘플 평균으로 설정
+	/* ADC0 Initialization: */  
+    ADC0->SC1[0] |= ADC_SC1_ADCH_MASK;	/* ADCH=1F: Module is disabled for conversions	*/
+                                        /* AIEN=0: Interrupts are disabled 			*/
+    ADC0->CFG1 |= ADC_CFG1_ADIV_MASK
+                |ADC_CFG1_MODE(1);	/* ADICLK=0: Input clk=ALTCLK1=SOSCDIV2 	*/
+                                    /* ADIV=0: Prescaler=1 					*/
+                                    /* MODE=1: 12-bit conversion 				*/
 
-    /* 3. ADC Calibration */
-    ADC0->SC3 |= ADC_SC3_CAL_MASK;    // CAL=1: Start calibration 
-    /* 보정 실패 플래그(CALF)가 0이고, 보정 활성 플래그(CAL)가 1인 동안 대기 */
-    while (ADC0->SC3 & ADC_SC3_CAL_MASK) {}
-
-    /* 4. 보정이 끝난 후, 일반 변환을 위해 평균 기능 비활성화 */
-    ADC0->SC3 &= ~ADC_SC3_AVGE_MASK;
-
-    /* 5. ADC0 기본 설정 */
-    ADC0->CFG1 = ADC_CFG1_MODE(1) |     // 12비트 해상도 설정
-                ADC_CFG1_ADICLK(1) |    // 변환 속도를 결정할 기준 클럭을 선택
-                ADC_CFG1_ADIV(0);       // ADICLK에서 선택한 클럭 분주비 설정
-
-    /* SC1A: 변환 완료 인터럽트 비활성화 */
-    ADC0->SC1[0] = ADC_SC1_AIEN(0);
+    ADC0->CFG2 = ADC_CFG2_SMPLTS(12);	/* SMPLTS=12(default): sample time is 13 ADC clks 	*/
+    ADC0->SC2 = 0x00000000;         	/* ADTRG=0: SW trigger 							*/
+                                    /* ACFE,ACFGT,ACREN=0: Compare func disabled		*/
+                                    /* DMAEN=0: DMA disabled 							*/
+                                    /* REFSEL=0: Voltage reference pins= VREFH, VREEFL */
+    ADC0->SC3 = 0x00000000;       	/* CAL=0: Do not start calibration sequence 		*/
+                                    /* ADCO=0: One conversion performed 				*/
+                                    /* AVGE,AVGS=0: HW average function disabled 		*/
 }
 
 /**

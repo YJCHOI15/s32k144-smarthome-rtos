@@ -1,6 +1,7 @@
 #include "shh_display.h"
 #include "drivers/gpio_driver.h"
 #include "drivers/lpi2c_driver.h"
+#include "drivers/lpit_driver.h"
 #include "sh_config.h"
 #include <string.h>
 
@@ -78,17 +79,17 @@ void SHH_Display_Init(void) {
  * Common Cathod -> 1써서 led 켬
 */
 
-void SHH_FND_NumberParsing(uint32_t number) {
+void SHH_FND_BufferUpdate(uint32_t number) {
 
     // 밝기 저장: PIN_FND_SEL5, 6
     g_fnd_buffer[5] = number % 10;
     g_fnd_buffer[4] = (number / 10) % 10;
     
-    // 온도 저장: PIN_FND_SEL3, 4
+    // 습도 저장: PIN_FND_SEL3, 4
     g_fnd_buffer[3] = (number / 100) % 10;
     g_fnd_buffer[2] = (number / 1000) % 10;
-    
-    // 습도 저장: PIN_FND_SEL1, 2
+
+    // 온도 저장: PIN_FND_SEL1, 2
     g_fnd_buffer[1] = (number / 10000) % 10;
     g_fnd_buffer[0] = (number / 100000) % 10;
 }

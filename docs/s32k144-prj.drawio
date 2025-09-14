@@ -79,7 +79,7 @@
     </mxGraphModel>
   </diagram>
   <diagram id="NSudRIAXjo_OFwlJKpMy" name="sw아키텍처 / hw구성도 / sw계층구조">
-    <mxGraphModel dx="2211" dy="1008" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="2413" dy="1130" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -98,7 +98,7 @@
         <mxCell id="_LuwhrSKU5VuFQVMcmnM-31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="_LuwhrSKU5VuFQVMcmnM-3" target="_LuwhrSKU5VuFQVMcmnM-27" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="ZG7b-ssN1x3RsO-3ipbD-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" edge="1" parent="1" source="_LuwhrSKU5VuFQVMcmnM-3" target="_LuwhrSKU5VuFQVMcmnM-26">
+        <mxCell id="ZG7b-ssN1x3RsO-3ipbD-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" parent="1" source="_LuwhrSKU5VuFQVMcmnM-3" target="_LuwhrSKU5VuFQVMcmnM-26" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="-20" y="-310" />
@@ -118,7 +118,7 @@
         <mxCell id="_LuwhrSKU5VuFQVMcmnM-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="_LuwhrSKU5VuFQVMcmnM-5" target="_LuwhrSKU5VuFQVMcmnM-41" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="ZG7b-ssN1x3RsO-3ipbD-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="_LuwhrSKU5VuFQVMcmnM-5" target="ZG7b-ssN1x3RsO-3ipbD-5">
+        <mxCell id="ZG7b-ssN1x3RsO-3ipbD-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="_LuwhrSKU5VuFQVMcmnM-5" target="ZG7b-ssN1x3RsO-3ipbD-5" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="_LuwhrSKU5VuFQVMcmnM-5" value="FTM" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
@@ -231,7 +231,7 @@
         <mxCell id="_LuwhrSKU5VuFQVMcmnM-41" value="PWM" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="-110" y="-30.25" width="69" height="28" as="geometry" />
         </mxCell>
-        <mxCell id="_LuwhrSKU5VuFQVMcmnM-44" value="CAN SW" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+        <mxCell id="_LuwhrSKU5VuFQVMcmnM-44" value="CANView" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="116" y="28.75" width="69" height="28" as="geometry" />
         </mxCell>
         <mxCell id="_LuwhrSKU5VuFQVMcmnM-47" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;startArrow=classic;startFill=1;" parent="1" source="_LuwhrSKU5VuFQVMcmnM-34" target="_LuwhrSKU5VuFQVMcmnM-44" edge="1">
@@ -363,13 +363,13 @@
         <mxCell id="WQhLLIanQAvZ0avUKWNo-1" value="Hardware Abstraction Layer: 애플리케이션 동작을 실제 드라이버 호출로 변환(shh_led.c, shh_actuator.c, shh_sensor.c, ...)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
           <mxGeometry x="-989" y="209" width="397" height="49" as="geometry" />
         </mxCell>
-        <mxCell id="ZG7b-ssN1x3RsO-3ipbD-3" value="uWave &lt;br&gt;Trig" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="ZG7b-ssN1x3RsO-3ipbD-3" value="uWave &lt;br&gt;Trig" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="175" y="-74.25" width="69" height="28" as="geometry" />
         </mxCell>
-        <mxCell id="ZG7b-ssN1x3RsO-3ipbD-4" value="Interrupt" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="ZG7b-ssN1x3RsO-3ipbD-4" value="Interrupt" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="-110" y="-167" width="69" height="28" as="geometry" />
         </mxCell>
-        <mxCell id="ZG7b-ssN1x3RsO-3ipbD-5" value="Counter" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="ZG7b-ssN1x3RsO-3ipbD-5" value="Counter" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="-110" y="-61" width="69" height="28" as="geometry" />
         </mxCell>
       </root>

@@ -32,7 +32,7 @@
 #define PIN_BTN3                         ((sh_port_pin_t){PORT_E, 15})
 #define PIN_BTN4                         ((sh_port_pin_t){PORT_E, 16})
 
-#define PIN_FTM0_CH1_LED8                ((sh_port_pin_t){PORT_C, 1})
+#define PIN_FTM0_CH6_LED8                ((sh_port_pin_t){PORT_A, 17})
 #define PIN_FTM0_CH2_SERVO               ((sh_port_pin_t){PORT_C, 2})
 
 #define PIN_LED_RED                      ((sh_port_pin_t){PORT_D, 15})
@@ -49,9 +49,9 @@
 #define PIN_FND_DATA_B                   ((sh_port_pin_t){PORT_B, 9})
 #define PIN_FND_DATA_C                   ((sh_port_pin_t){PORT_B, 10})
 #define PIN_FND_DATA_D                   ((sh_port_pin_t){PORT_B, 11})
-#define PIN_FND_DATA_E                   ((sh_port_pin_t){PORT_C, 3})
-#define PIN_FND_DATA_F                   ((sh_port_pin_t){PORT_C, 10})
-#define PIN_FND_DATA_G                   ((sh_port_pin_t){PORT_C, 11})
+#define PIN_FND_DATA_E                   ((sh_port_pin_t){PORT_A, 0})
+#define PIN_FND_DATA_F                   ((sh_port_pin_t){PORT_A, 1})
+#define PIN_FND_DATA_G                   ((sh_port_pin_t){PORT_A, 7})
 
 #define PIN_FND_SEL1                     ((sh_port_pin_t){PORT_B, 2})
 #define PIN_FND_SEL2                     ((sh_port_pin_t){PORT_B, 3})
@@ -126,7 +126,7 @@ typedef struct {
 
 /* Display Data Queue를 통해 전달될 메시지 구조체 */
 typedef struct {
-    char fnd_string[7]; // "TT:HH:BB" 형식
+    uint32_t fnd_number; // "TT:HH:BB" 형식
     char oled_string[20]; // 수동 -> 현재 장치, 그외 -> 모드 표시
 } display_data_t;
 
@@ -152,11 +152,13 @@ typedef struct {
 /********************* RTOS Object Handler ******************/
 extern QueueHandle_t g_command_queue;
 extern QueueHandle_t g_sensor_data_queue;
-extern QueueHandle_t g_display_data_queue;
 extern SemaphoreHandle_t g_system_status_mutex;
 extern SemaphoreHandle_t g_button_interrupt_semaphore;
 extern SemaphoreHandle_t g_uWave_semaphore;
+extern SemaphoreHandle_t g_uart_mutex;
 extern EventGroupHandle_t g_security_event_group;
+
+extern volatile display_data_t g_display_data;
 
 
 #endif /* SH_CONFIG_H */

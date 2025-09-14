@@ -73,7 +73,8 @@ PRIORITY THAN THIS! (higher priorities are lower numeric values. */
 /* Memory allocation related definitions. */
 #define configSUPPORT_STATIC_ALLOCATION             0
 #define configSUPPORT_DYNAMIC_ALLOCATION            1
-#define configTOTAL_HEAP_SIZE                       (( size_t ) 8192 )
+// #define configTOTAL_HEAP_SIZE                       (( size_t ) 8192 )
+#define configTOTAL_HEAP_SIZE                       (( size_t ) 20000 )
 #define configAPPLICATION_ALLOCATED_HEAP            0
 
 /* Hook function related definitions. */
@@ -154,13 +155,15 @@ function. */
 /* Interrupt priorities used by the kernel port layer itself.  These are generic
 to all Cortex-M ports, and do not rely on any particular library functions. */
 #ifndef configKERNEL_INTERRUPT_PRIORITY
-  #define configKERNEL_INTERRUPT_PRIORITY         (configLIBRARY_LOWEST_INTERRUPT_PRIORITY << (8-configPRIO_BITS))  
+  // #define configKERNEL_INTERRUPT_PRIORITY         (configLIBRARY_LOWEST_INTERRUPT_PRIORITY << (8-configPRIO_BITS))
+  #define configKERNEL_INTERRUPT_PRIORITY         15
 #endif
   
 /* !!!! configMAX_SYSCALL_INTERRUPT_PRIORITY must not be set to zero !!!!
 See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 #ifndef configMAX_SYSCALL_INTERRUPT_PRIORITY
-  #define configMAX_SYSCALL_INTERRUPT_PRIORITY    (configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY << (8-configPRIO_BITS))
+  // #define configMAX_SYSCALL_INTERRUPT_PRIORITY    (configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY << (8-configPRIO_BITS))
+  #define configMAX_SYSCALL_INTERRUPT_PRIORITY    5
 #endif
 
 /* Definitions that map the FreeRTOS port interrupt handlers to their CMSIS
