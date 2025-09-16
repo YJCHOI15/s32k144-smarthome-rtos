@@ -179,8 +179,4 @@ void SHH_Init(void)
     // SHD_IT_EnableIRQ(LPIT0_Ch3_IRQn);         // us 딜레이 함수
     // SHD_IT_SetPriority(LPIT0_Ch3_IRQn, 12);
 
-    /* 6. SHH 계층 초기화 */
-    SHH_LEDs_Init();
-    SHH_Display_Init(); 
-
 }

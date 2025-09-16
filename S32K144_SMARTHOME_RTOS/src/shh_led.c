@@ -4,18 +4,8 @@
 #include "drivers/ftm_driver.h"
 
 void SHH_LEDs_Init(void) {
-    
-    // 1. 모든 LED 핀을 출력으로 초기화
-    SHD_GPIO_InitPin(PIN_LED_RED, GPIO_OUTPUT);
-    SHD_GPIO_InitPin(PIN_LED_GREEN, GPIO_OUTPUT);
-    SHD_GPIO_InitPin(PIN_LED_BLUE, GPIO_OUTPUT);
-    SHD_GPIO_InitPin(PIN_LED1, GPIO_OUTPUT);
-    SHD_GPIO_InitPin(PIN_LED2, GPIO_OUTPUT);
-    SHD_GPIO_InitPin(PIN_LED4, GPIO_OUTPUT);
-    SHD_GPIO_InitPin(PIN_LED5, GPIO_OUTPUT);
-    SHD_GPIO_InitPin(PIN_LED6, GPIO_OUTPUT);
 
-    // 2. 전원 LED를 제외한 모든 LED를 끈 상태(HIGH)로 시작
+    // 전원 LED를 제외한 모든 LED를 끈 상태(HIGH)로 시작
     SHD_GPIO_WritePin(PIN_LED_RED, 1);
     SHD_GPIO_WritePin(PIN_LED_GREEN, 1);
     SHD_GPIO_WritePin(PIN_LED_BLUE, 1);
@@ -24,7 +14,7 @@ void SHH_LEDs_Init(void) {
     SHD_GPIO_WritePin(PIN_LED5, 1);
     SHD_GPIO_WritePin(PIN_LED6, 1);
 
-    // 3. 전원 LED(LED_1)만 켠다.
+    // 전원 LED(LED_1)만 켠다.
     SHD_GPIO_WritePin(PIN_LED1, 0);
 }
 

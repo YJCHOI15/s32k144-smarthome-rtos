@@ -6,6 +6,9 @@
         "ftm_driver.h": "c",
         "shh_sound.h": "c",
         "freertosconfig.h": "c",
-        "lpit_driver.h": "c"
+        "lpit_driver.h": "c",
+        "adc_driver.h": "c",
+        "shh_led.h": "c",
+        "gpio_driver.h": "c"
     }
 }

@@ -1,9 +1,11 @@
 #include "shh_sensor.h"
+#include "shh_uart.h"
 #include "sh_config.h"
+
 #include "drivers/gpio_driver.h"
 #include "drivers/adc_driver.h"
 #include "drivers/lpit_driver.h"
-#include "shh_uart.h"
+
 
 
 /* 온습도 센서 통신을 위한 내부 함수 선언 */
@@ -37,13 +39,14 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
     uint32_t timeout_counter;
 
     /**
-     * DHT11 온습도 센서 통신과정 
+     * DHT11 온습도 센서 프로토콜
      * 1. 통신개시 알림: mcu가 센서로 18ms 동안 LOW 유지하고 
      *                  HIGH로 전환해서 20-40ms 기다림
      *                  이 신호를 받으면 DHT11는 대기상태에서 깨어남
      * 2. 응답신호: DHT11가 대기상태에서 깨어나 80us LOW 신호 보내고
      *             다시 80us HIGH를 보냄으로써 준비가 됐음을 mcu에 알림
      * 3. 온습도 정보 송신: DHT11가 40bit의 데이터열을 보낸다.
+     *                     LOW          : HIGH 보내기 전
      *                     HIGH 26~28us : 0
      *                     HIGH 70us    : 1    -> HIGH의 길이로 0, 1 정의
      * 4. 데이터 수신 및 파싱: 습도(16bit) + 온도(16bit) + 체크섬(8bit) 수신
@@ -53,49 +56,61 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
      *                        일치하지 않으면 오류가 발생했음을 의미한다.  
      */
 
-    // 1. 통신 시작 신호 (18ms Low -> 30us High)
+    // 1. 통신 시작 신호
     SHD_GPIO_InitPin(PIN_TEMP_HUMI, GPIO_OUTPUT);
     SHD_GPIO_WritePin(PIN_TEMP_HUMI, 0);
+    SHD_GPIO_WritePin(PIN_LED1, 0);       ////////////////////// LOW
     SHD_LPIT0_DelayUs(3, 18000);
-    SHD_GPIO_WritePin(PIN_TEMP_HUMI, 1);
-    SHD_LPIT0_DelayUs(3, 50);
+    SHD_GPIO_WritePin(PIN_TEMP_HUMI, 1);  ////////////////////// HIGH
+    SHD_GPIO_WritePin(PIN_LED1, 1);
+    SHD_LPIT0_DelayUs(3, 5);
     SHD_GPIO_InitPin(PIN_TEMP_HUMI, GPIO_INPUT);
 
 
     // 2. DHT11 응답 신호 확인 (80us Low -> 80us High)
     timeout_counter = 100;
-    while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1) {
-        if (timeout_counter-- == 0) return false;
+    while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1) {  // DHT11 센서 주기에 따라 응답 안할 수도 있음
+        if (timeout_counter-- == 0) {
+            SHD_GPIO_WritePin(PIN_LED1, 1);
+            return false;
+        }   
         SHD_LPIT0_DelayUs(3, 1);
     }
-    timeout_counter = 100;
-    while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 0) {
-        if (timeout_counter-- == 0) return false;
-        SHD_LPIT0_DelayUs(3, 1);
-    }
+    ////////////////////// LOW
+    SHD_GPIO_WritePin(PIN_LED1, 0);
+
+    while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 0); // 응답 HIGH 신호 
+    ////////////////////// HIGH
+    SHD_GPIO_WritePin(PIN_LED1, 1);
+
+    // 첫 비트 시작 LOW
+    while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1);
+    ////////////////////// LOW
+    SHD_GPIO_WritePin(PIN_LED1, 0);
 
     // 3. 40비트 데이터 수신 (각 비트 50us Low -> 26~28us (0) / 70us High (1))
-    for (int i = 0; i < 40; i++) {
-        // 비트 시작 (Low)
-        timeout_counter = 100;
-        while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 0) {
-            if (timeout_counter-- == 0) return false;
-            SHD_LPIT0_DelayUs(3, 1);
-        }
+    for (uint8_t i = 0; i < 40; i++) {
 
-        // 비트 길이 측정 (High)
-        uint32_t high_duration = 0;
+        while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 0);
+        ////////////////////// HIGH
+        /////////////////////////////////////////// 여기서부터
+        SHD_GPIO_WritePin(PIN_LED1, 1);
+
+        uint8_t high_duration = 0;
         while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1) {
             high_duration++;
-            SHD_LPIT0_DelayUs(3, 1);
-            if (high_duration > 100) return false;
+            SHD_LPIT0_DelayUs(3, 10);
         }
+        ////////////////////// LOW
+        /////////////////////////////////////////// 여기까지 시간 재야 함
+        SHD_GPIO_WritePin(PIN_LED1, 0);
 
         // 왼쪽 시프트로 비트 자리 마련
         current_byte <<= 1;
         
         // 26-28us보다 길면 1, 짧으면 0
-        if (high_duration > 50) {
+        // 10us 실제 길이 약 15us
+        if (high_duration > 3) {
             current_byte |= 1;
         }
 
@@ -106,6 +121,10 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
             current_byte = 0;
         }
     }
+
+    while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 0);
+    ////////////////////// HIGH
+    SHD_GPIO_WritePin(PIN_LED1, 1);
 
     // 4. 체크섬 검증
     if (data[4] == ((data[0] + data[1] + data[2] + data[3]) & 0xFF)) {

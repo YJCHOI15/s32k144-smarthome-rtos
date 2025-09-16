@@ -313,9 +313,12 @@ static void _update_display(void) {
     // 1. FND 문자열 포맷팅
     uint8_t brightness = (g_latest_sensor_data.cds_raw * 100) / 4095;
     if (brightness == 100) brightness = 99;
+
+    xSemaphoreTake(g_display_data_mutex, portMAX_DELAY);   
     g_display_data.fnd_number = (g_latest_sensor_data.temperature * 10000) 
-                    + (g_latest_sensor_data.humidity * 100) 
-                    + brightness;
+        + (g_latest_sensor_data.humidity * 100) 
+        + brightness;
+    xSemaphoreGive(g_display_data_mutex);  
 
     // // 2. OLED 포맷팅 (현재 모드 기준)
     // xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
@@ -344,7 +347,7 @@ void SH_Sensor_Task(void *pvParameters) {
     sensor_data_t sensor_data_to_send;
 
     for (;;) {
-        // 1. 1000ms마다 주기적으로 실행
+        // 1. 주기적으로 실행
         vTaskDelay(pdMS_TO_TICKS(1000));
 
         // 2. HAL 함수를 호출하여 모든 센서 값을 읽어온다.

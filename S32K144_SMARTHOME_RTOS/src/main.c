@@ -20,11 +20,16 @@
 
 #include "shh_system.h"
 #include "shh_uart.h"
+#include "shh_led.h"
+#include "shh_display.h"
 
 int main(void)
 {
     /* 모든 하드웨어 드라이버 초기화 */
-    SHH_Init();
+	SHH_Init();
+    SHH_LEDs_Init();
+    SHH_FND_Init();
+    // SHH_OLED_Init();
 
     /* RTOS 객체 생성 */
     g_command_queue = xQueueCreate(10, sizeof(command_msg_t));
