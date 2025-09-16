@@ -15,19 +15,21 @@
 
 #include "timers.h"
 
-TimerHandle_t g_fnd_timer;
-
 
 /************************ RTOS 객체 핸들러 정의 *******************/
 QueueHandle_t g_command_queue;
 QueueHandle_t g_sensor_data_queue;
-QueueHandle_t g_display_data_queue;
+
 SemaphoreHandle_t g_system_status_mutex;
+SemaphoreHandle_t g_display_data_mutex;
+SemaphoreHandle_t g_uart_mutex;
+
 SemaphoreHandle_t g_button_interrupt_semaphore;
 SemaphoreHandle_t g_uWave_semaphore;
-SemaphoreHandle_t g_uart_mutex;
+
 EventGroupHandle_t g_security_event_group;
 
+TimerHandle_t g_fnd_timer;
 
 /************************** 전역 변수 정의 ************************/
 // 시스템의 현재 상태를 저장
@@ -516,7 +518,9 @@ void SH_Display_Task(void *pvParameters) {
 
     for (;;) {
         // 최신 값 반영만 수행
-        SHH_FND_BufferUpdate(g_display_data.fnd_number);
+        xSemaphoreTake(g_display_data_mutex, portMAX_DELAY);  
+        SHH_FND_BufferUpdate(g_display_data.fnd_number);     
+        xSemaphoreGive(g_display_data_mutex);              
 
         vTaskDelay(pdMS_TO_TICKS(50));
     }

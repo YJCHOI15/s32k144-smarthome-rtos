@@ -29,10 +29,14 @@ int main(void)
     /* RTOS 객체 생성 */
     g_command_queue = xQueueCreate(10, sizeof(command_msg_t));
     g_sensor_data_queue = xQueueCreate(10, sizeof(sensor_data_t));
+
     g_system_status_mutex = xSemaphoreCreateMutex();
-    g_uWave_semaphore = xSemaphoreCreateBinary();
+    g_display_data_mutex = xSemaphoreCreateMutex();
     g_uart_mutex = xSemaphoreCreateMutex();
+
     g_button_interrupt_semaphore = xSemaphoreCreateBinary();
+    g_uWave_semaphore = xSemaphoreCreateBinary();
+
     g_security_event_group = xEventGroupCreate();
 
     /* RTOS 태스크 생성 */
