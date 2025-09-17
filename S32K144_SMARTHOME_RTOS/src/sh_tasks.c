@@ -571,7 +571,7 @@ void SH_Display_Task(void *pvParameters) {
 
 void FND_Scan_Task(void *pvParameters) {
     (void)pvParameters;
-    const TickType_t xPeriod = pdMS_TO_TICKS(1); // 1ms 주기
+    const TickType_t xPeriod = pdMS_TO_TICKS(2); // 1ms 주기
     TickType_t xLastWakeTime = xTaskGetTickCount();
 
     for (;;) {
