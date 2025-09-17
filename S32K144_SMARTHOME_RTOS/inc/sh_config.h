@@ -113,7 +113,7 @@ typedef struct {
 } command_msg_t;
 
 /* Sensor Data Queue를 통해 전달될 메시지 구조체 */
-#define TEMP_THRESHOLD   28  // FAN 작동 온도
+#define TEMP_THRESHOLD   27  // FAN 작동 온도
 typedef struct {
     uint8_t temperature;
     uint8_t humidity;
@@ -127,7 +127,8 @@ typedef struct {
 /* Display Data Queue를 통해 전달될 메시지 구조체 */
 typedef struct {
     uint32_t fnd_number; // "TT:HH:BB" 형식
-    char oled_string[20]; // 수동 -> 현재 장치, 그외 -> 모드 표시
+    char oled_mode_str[20];
+    char oled_device_str[20];
 } display_data_t;
 
 /* 공유 데이터: 여러 태스크가 접근하는 시스템의 현재 상태 */

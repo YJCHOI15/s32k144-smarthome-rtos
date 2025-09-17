@@ -59,10 +59,10 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
     // 1. 통신 시작 신호
     SHD_GPIO_InitPin(PIN_TEMP_HUMI, GPIO_OUTPUT);
     SHD_GPIO_WritePin(PIN_TEMP_HUMI, 0);
-    SHD_GPIO_WritePin(PIN_LED1, 0);       ////////////////////// LOW
+    // SHD_GPIO_WritePin(PIN_LED1, 0);       ////////////////////// LOW
     SHD_LPIT0_DelayUs(3, 18000);
     SHD_GPIO_WritePin(PIN_TEMP_HUMI, 1);  ////////////////////// HIGH
-    SHD_GPIO_WritePin(PIN_LED1, 1);
+    // SHD_GPIO_WritePin(PIN_LED1, 1);
     SHD_LPIT0_DelayUs(3, 5);
     SHD_GPIO_InitPin(PIN_TEMP_HUMI, GPIO_INPUT);
 
@@ -71,22 +71,22 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
     timeout_counter = 100;
     while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1) {  // DHT11 센서 주기에 따라 응답 안할 수도 있음
         if (timeout_counter-- == 0) {
-            SHD_GPIO_WritePin(PIN_LED1, 1);
+            // SHD_GPIO_WritePin(PIN_LED1, 1);
             return false;
         }   
         SHD_LPIT0_DelayUs(3, 1);
     }
     ////////////////////// LOW
-    SHD_GPIO_WritePin(PIN_LED1, 0);
+    // SHD_GPIO_WritePin(PIN_LED1, 0);
 
     while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 0); // 응답 HIGH 신호 
     ////////////////////// HIGH
-    SHD_GPIO_WritePin(PIN_LED1, 1);
+    // SHD_GPIO_WritePin(PIN_LED1, 1);
 
     // 첫 비트 시작 LOW
     while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1);
     ////////////////////// LOW
-    SHD_GPIO_WritePin(PIN_LED1, 0);
+    // SHD_GPIO_WritePin(PIN_LED1, 0);
 
     // 3. 40비트 데이터 수신 (각 비트 50us Low -> 26~28us (0) / 70us High (1))
     for (uint8_t i = 0; i < 40; i++) {
@@ -94,7 +94,7 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
         while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 0);
         ////////////////////// HIGH
         /////////////////////////////////////////// 여기서부터
-        SHD_GPIO_WritePin(PIN_LED1, 1);
+        // SHD_GPIO_WritePin(PIN_LED1, 1);
 
         uint8_t high_duration = 0;
         while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 1) {
@@ -103,7 +103,7 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
         }
         ////////////////////// LOW
         /////////////////////////////////////////// 여기까지 시간 재야 함
-        SHD_GPIO_WritePin(PIN_LED1, 0);
+        // SHD_GPIO_WritePin(PIN_LED1, 0);
 
         // 왼쪽 시프트로 비트 자리 마련
         current_byte <<= 1;
@@ -124,7 +124,7 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
 
     while(SHD_GPIO_ReadPin(PIN_TEMP_HUMI) == 0);
     ////////////////////// HIGH
-    SHD_GPIO_WritePin(PIN_LED1, 1);
+    // SHD_GPIO_WritePin(PIN_LED1, 1);
 
     // 4. 체크섬 검증
     if (data[4] == ((data[0] + data[1] + data[2] + data[3]) & 0xFF)) {

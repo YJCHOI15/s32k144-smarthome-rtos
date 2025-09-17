@@ -6,6 +6,7 @@ void SH_Sensor_Task(void *pvParameters);
 void SH_ButtonInput_Task(void *pvParameters);
 void SH_CanComm_Task(void *pvParameters);
 void SH_Display_Task(void *pvParameters);
+void FND_Scan_Task(void *pvParameters);
 void SH_SecurityEvent_Task(void *pvParameters);
 
 void SH_Can_Init(void);

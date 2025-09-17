@@ -10,21 +10,24 @@ void SHD_LPI2C0_Init(void) {
     PCC->PCCn[PCC_LPI2C0_INDEX] = PCC_PCCn_PCS(1)      /* PCS=1: Select SOSCDIV2_CLK */
                                 | PCC_PCCn_CGC_MASK; /* CGC=1: Clock enabled */
 
-    /* 2. LPI2C0 마스터 모듈 리셋 */
-    LPI2C0->MCR |= LPI2C_MCR_RST_MASK; // 모듈 리셋
-    LPI2C0->MCR = 0x00000000;          // 리셋 해제 및 기본 설정
+    // Reset
+    LPI2C0->MCR = LPI2C_MCR_RST_MASK;
+    (void)LPI2C0->MCR;          // dummy read (권장)
+    LPI2C0->MCR = 0;            // Reset 해제 (MEN=0 유지)
 
-    /* 3. I2C 100kHz (Standard Mode)를 위한 클럭 설정 */
-    /* Baud Rate = (Source Clock / (2^PRESCALE)) / (CLKLO + CLKHI + 2)
-     * 100,000 = (8,000,000 / (2^1)) / (19 + 19 + 2)
-     */
-    LPI2C0->MCCR0 = LPI2C_MCCR0_CLKLO(19) | LPI2C_MCCR0_CLKHI(19);
+    // Baudrate, Prescaler 먼저 세팅
+    LPI2C0->MCFGR1 = LPI2C_MCFGR1_PRESCALE(1);
+    LPI2C0->MCCR0  = LPI2C_MCCR0_CLKLO(19) | LPI2C_MCCR0_CLKHI(19) |
+                    LPI2C_MCCR0_SETHOLD(7) | LPI2C_MCCR0_DATAVD(7);
 
-    /* Prescaler 설정 */
-    LPI2C0->MCFGR1 = LPI2C_MCFGR1_PRESCALE(1); // Prescaler = 2
+    // Status 클리어
+    LPI2C0->MSR = 0xFFFFFFFF;
 
-    /* 4. LPI2C0 마스터 모드 활성화 */
-    LPI2C0->MCR |= LPI2C_MCR_MEN_MASK;
+    // FIFO flush
+    LPI2C0->MCR |= LPI2C_MCR_RTF_MASK | LPI2C_MCR_RRF_MASK;
+
+    // Master Enable (맨 마지막)
+    LPI2C0->MCR |= LPI2C_MCR_MEN_MASK;  
 }
 
 /**
@@ -47,13 +50,19 @@ bool SHD_LPI2C0_Write(uint8_t slave_addr, uint8_t* data, uint32_t len) {
         }
 
         /* 데이터 전송 */
-        LPI2C0->MTDR = LPI2C_MTDR_CMD(1) | LPI2C_MTDR_DATA(data[i]);
+        LPI2C0->MTDR = LPI2C_MTDR_CMD(0) | LPI2C_MTDR_DATA(data[i]);
 
         /* NACK(Not Acknowledge) 수신 시 전송 중단 */
         if (LPI2C0->MSR & LPI2C_MSR_NDF_MASK) {
             LPI2C0->MSR |= LPI2C_MSR_NDF_MASK; // NACK 플래그 클리어
             return false;
         }
+    }
+
+    timeout = 0;
+    while (!(LPI2C0->MSR & LPI2C_MSR_TDF_MASK)) {
+        timeout++;
+        if (timeout > LPI2C_TIMEOUT) return false;
     }
 
     /* 3. STOP 신호 전송 */

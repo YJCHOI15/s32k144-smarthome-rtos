@@ -15,6 +15,9 @@
 
 #include "timers.h"
 
+#include <stdio.h>
+#include <string.h>
+
 
 /************************ RTOS 객체 핸들러 정의 *******************/
 QueueHandle_t g_command_queue;
@@ -28,8 +31,6 @@ SemaphoreHandle_t g_button_interrupt_semaphore;
 SemaphoreHandle_t g_uWave_semaphore;
 
 EventGroupHandle_t g_security_event_group;
-
-TimerHandle_t g_fnd_timer;
 
 /************************** 전역 변수 정의 ************************/
 // 시스템의 현재 상태를 저장
@@ -57,7 +58,6 @@ static void _run_monitoring_mode_logic(const sensor_data_t* data);
 static void _update_display(void);
 static void _security_led_timer_callback(void);
 static void _can_rx_callback(uint32_t id, uint8_t* data, uint8_t dlc);
-static void vFndTimerCallback(TimerHandle_t xTimer);
 
 /********************************************************************/
 /************************ MainControlTask ***************************/
@@ -297,7 +297,7 @@ static void _security_led_timer_callback(void) {
 static void _run_monitoring_mode_logic(const sensor_data_t* data) {
 
     // 자동 팬 제어 (온도 기반)
-    if (data->temperature > TEMP_THRESHOLD) {
+    if (data->temperature >= TEMP_THRESHOLD) {
         SHH_Fan_On();
     } else {
         SHH_Fan_Off();
@@ -320,21 +320,47 @@ static void _update_display(void) {
         + brightness;
     xSemaphoreGive(g_display_data_mutex);  
 
-    // // 2. OLED 포맷팅 (현재 모드 기준)
-    // xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
-    // system_mode_t current_mode = g_system_status.current_mode;
-    // xSemaphoreGive(g_system_status_mutex);
+    // 2. OLED 포맷팅 (현재 모드 기준)
+    xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
+    system_mode_t current_mode = g_system_status.current_mode;
+    xSemaphoreGive(g_system_status_mutex);
 
-    // if (current_mode == MODE_MANUAL) {
+    char temp_mode_str[20];
+    char temp_device_str[20];
 
-    //     switch(g_selected_device) {
-    //         case DEVICE_SERVO: snprintf(msg.oled_string, 20, "Selected: DoorLock"); break;
-    //         case DEVICE_STEP:  snprintf(msg.oled_string, 20, "Selected: Blinds");   break;
-    //         case DEVICE_RELAY: snprintf(msg.oled_string, 20, "Selected: ExtPower"); break;
-    //     }
-    // } else {
-    //     snprintf(msg.oled_string, 20, "Mode: %s", (current_mode == MODE_MONITORING) ? "Monitoring" : "Security");
-    // }
+    switch(current_mode) {
+        case MODE_MONITORING:
+            snprintf(temp_mode_str, 20, "Mode: Monitoring");
+            snprintf(temp_device_str, 20, "Selected:         ");
+            break;
+            case MODE_MANUAL:
+            snprintf(temp_mode_str, 20, "Mode: Manual");
+            switch(g_selected_device) {
+                case DEVICE_SERVO: snprintf(temp_device_str, 20, "Selected: DoorLock"); break;
+                case DEVICE_STEP:  snprintf(temp_device_str, 20, "Selected: Blinds");   break;
+                case DEVICE_RELAY: snprintf(temp_device_str, 20, "Selected: ExtPower"); break;
+            }
+            break;
+        case MODE_SECURITY:
+            snprintf(temp_mode_str, 20, "Mode: Security");
+            snprintf(temp_device_str, 20, "Selected:         ");
+            break;
+    } 
+
+    xSemaphoreTake(g_display_data_mutex, portMAX_DELAY); // Mutex 획득
+    for (int i = 0; i < 20; ++i) {
+        g_display_data.oled_mode_str[i] = temp_mode_str[i];
+        if (temp_mode_str[i] == '\0') {
+            break;
+        }
+    }
+    for (int i = 0; i < 20; ++i) {
+        g_display_data.oled_device_str[i] = temp_device_str[i];
+        if (temp_device_str[i] == '\0') {
+            break;
+        }
+    }
+    xSemaphoreGive(g_display_data_mutex); // Mutex 반환
 
 }
 
@@ -500,40 +526,62 @@ static void _can_rx_callback(uint32_t id, uint8_t* data, uint8_t dlc) {
 }
 
 /********************************************************************/
-/**************************** DisplayTask ***************************/
+/**************************** DisplayTask & FNDScanTask**************/
 /********************************************************************/
 void SH_Display_Task(void *pvParameters) {
 
     (void)pvParameters;
 
-    // FND 스캔용 소프트웨어 타이머 생성 (주기: 1ms) -> OLED도 쓸지 미정
-    g_fnd_timer = xTimerCreate(
-        "FndTimer",                   // 타이머 이름
-        pdMS_TO_TICKS(1),             // 주기 (1ms)
-        pdTRUE,                       // 자동 재로드 (계속 반복)
-        (void*)0,                     // 타이머 ID (사용 안함)
-        vFndTimerCallback             // 콜백 함수
-    );
-
-    if (g_fnd_timer != NULL) {
-        xTimerStart(g_fnd_timer, 0);
-    }
+    SHH_OLED_Clear();
 
     for (;;) {
-        // 최신 값 반영만 수행
-        xSemaphoreTake(g_display_data_mutex, portMAX_DELAY);  
-        SHH_FND_BufferUpdate(g_display_data.fnd_number);     
-        xSemaphoreGive(g_display_data_mutex);              
 
-        vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        
+        uint32_t temp_fnd_number;
+        char temp_mode_str[20];
+        char temp_device_str[20];
+
+        xSemaphoreTake(g_display_data_mutex, portMAX_DELAY);  
+        temp_fnd_number = g_display_data.fnd_number;
+        for (int i = 0; i < 20; ++i) {
+            temp_mode_str[i] = g_display_data.oled_mode_str[i];
+            if (temp_mode_str[i] == '\0') {
+                break;
+            }
+        }
+        for (int i = 0; i < 20; ++i) {
+            temp_device_str[i] = g_display_data.oled_device_str[i];
+            if (temp_device_str[i] == '\0') {
+                break;
+            }
+        }
+        xSemaphoreGive(g_display_data_mutex); 
+
+        // 최신 값 반영만 수행
+        SHH_FND_BufferUpdate(temp_fnd_number);     
+        
+        SHH_OLED_SetCursor(0, 0);
+        SHH_OLED_PrintString_5x8(temp_mode_str);
+        SHH_OLED_SetCursor(0, 2); 
+        SHH_OLED_PrintString_5x8(temp_device_str);
+
     }
 }
 
-static void vFndTimerCallback(TimerHandle_t xTimer) {
-    (void)xTimer;
-    SHH_FND_Display();   // 1자릿수 스캔
-}
+void FND_Scan_Task(void *pvParameters) {
+    (void)pvParameters;
+    const TickType_t xPeriod = pdMS_TO_TICKS(1); // 1ms 주기
+    TickType_t xLastWakeTime = xTaskGetTickCount();
 
+    for (;;) {
+        // 1. Mutex 없이 바로 버퍼에서 읽어서 스캔
+        SHH_FND_Display();  
+
+        // 2. 1ms 정확하게 대기
+        vTaskDelayUntil(&xLastWakeTime, xPeriod);
+    }
+}
 /********************************************************************/
 /************************ SecurityEventTask *************************/
 /********************************************************************/
