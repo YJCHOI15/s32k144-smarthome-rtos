@@ -68,5 +68,5 @@ void SHH_SecurityWarningLED_Toggle(void) {
 void SHH_MainLight_SetBrightness(int8_t brightness_percent) {
     if (brightness_percent < 0) brightness_percent = 0;
     // FTM0의 6번 채널(LED 8)에 Duty Cycle 설정
-    SHD_FTM0_SetDutyCycle(6, brightness_percent);
+    SHD_FTM_SetDutyCycle(FTM1, 5, brightness_percent);
 }

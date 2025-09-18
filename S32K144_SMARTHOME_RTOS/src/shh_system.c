@@ -45,7 +45,7 @@ void SHH_Init(void)
     SHD_PORT_SetPinMux(PIN_BTN3, PORT_MUX_GPIO);
     SHD_PORT_SetPinMux(PIN_BTN4, PORT_MUX_GPIO);
 
-    SHD_PORT_SetPinMux(PIN_FTM0_CH6_LED8, PORT_MUX_ALT_2);
+    SHD_PORT_SetPinMux(PIN_FTM1_CH5_LED8, PORT_MUX_ALT_2);
     SHD_PORT_SetPinMux(PIN_FTM0_CH2_SERVO, PORT_MUX_ALT_2);
 
     SHD_PORT_SetPinMux(PIN_LED_RED, PORT_MUX_GPIO);
@@ -141,9 +141,9 @@ void SHH_Init(void)
 
     // 나머지 드라이버 초기화
     SHD_ADC0_Init();
-    SHD_FTM0_Init();
-    SHD_FTM0_InitPwmChannel(6); // FTM0_CH6 (LED 8)
-    SHD_FTM0_InitPwmChannel(2); // FTM0_CH2 (Servo)
+    SHD_FTM_Init();
+    SHD_FTM_InitPwmChannel(FTM1, 5); // FTM1_CH5 (LED 8)
+    SHD_FTM_InitPwmChannel(FTM0, 2); // FTM0_CH2 (Servo)
     SHD_LPI2C0_Init();
     SHD_CAN0_Init();
     SHD_LPIT0_Init();

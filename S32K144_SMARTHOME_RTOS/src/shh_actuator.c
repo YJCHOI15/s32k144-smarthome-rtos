@@ -29,13 +29,13 @@ static uint8_t _angleToDuty(uint8_t angle);
 void SHH_DoorLock_Open(void) {
     // 오른쪽 90도
     uint8_t duty = _angleToDuty(90);
-    SHD_FTM0_SetDutyCycle(2, duty);  // duty = 2%
+    SHD_FTM_SetDutyCycle(FTM0, 2, duty);  // duty = 2%
 }
 
 void SHH_DoorLock_Close(void) {
     // 왼쪽 0도 (제자리)
     uint8_t duty = _angleToDuty(0);
-    SHD_FTM0_SetDutyCycle(2, duty);  // duty = 7%
+    SHD_FTM_SetDutyCycle(FTM0, 2, duty);  // duty = 7%
 }
 
 static uint8_t _angleToDuty(uint8_t angle) {

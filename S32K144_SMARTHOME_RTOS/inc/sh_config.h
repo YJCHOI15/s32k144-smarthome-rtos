@@ -1,6 +1,8 @@
 #ifndef SH_CONFIG_H
 #define SH_CONFIG_H
 
+#include "S32K144.h"
+
 #include <FreeRTOS.h>
 #include <queue.h>
 #include <semphr.h>
@@ -32,7 +34,7 @@
 #define PIN_BTN3                         ((sh_port_pin_t){PORT_E, 15})
 #define PIN_BTN4                         ((sh_port_pin_t){PORT_E, 16})
 
-#define PIN_FTM0_CH6_LED8                ((sh_port_pin_t){PORT_A, 17})
+#define PIN_FTM1_CH5_LED8                ((sh_port_pin_t){PORT_A, 11})
 #define PIN_FTM0_CH2_SERVO               ((sh_port_pin_t){PORT_C, 2})
 
 #define PIN_LED_RED                      ((sh_port_pin_t){PORT_D, 15})
