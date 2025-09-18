@@ -12,7 +12,6 @@ uint8_t SHH_ReadBrightnessSensor(void);
 uint8_t SHH_ReadManualControlVr(void);
 
 /* 초음파 센서를 사용하여 거리를 측정 (cm) */
-void SHH_uWave_Init(void);
 void SHH_uWave_StartMeasurement(void);
 uint16_t SHH_uWave_GetDistanceCm(void);
 void SHH_uWave_Echo_ISR_Handler(void);

@@ -124,7 +124,7 @@ typedef struct {
 } sensor_data_t;
 
 /* 초음파 감지 거리 */
-#define SECURITY_DISTANCE_THRESHOLD_CM 50
+#define SECURITY_DISTANCE_THRESHOLD_CM 30
 
 /* Display Data Queue를 통해 전달될 메시지 구조체 */
 typedef struct {
@@ -137,6 +137,7 @@ typedef struct {
 typedef struct {
     system_mode_t current_mode;
     bool is_alarm_active; // 보안 경고 활성화 여부
+    bool is_alarm_warning; // 보안 경고 상태 활성화 여부
 } system_status_t;
 
 /* CAN ID 정의 */
@@ -161,7 +162,6 @@ extern SemaphoreHandle_t g_display_data_mutex;
 extern SemaphoreHandle_t g_uart_mutex;
 
 extern SemaphoreHandle_t g_button_interrupt_semaphore;
-extern SemaphoreHandle_t g_uWave_semaphore;
 
 extern EventGroupHandle_t g_security_event_group;
 

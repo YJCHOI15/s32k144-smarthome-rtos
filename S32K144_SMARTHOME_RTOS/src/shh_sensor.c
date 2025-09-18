@@ -7,6 +7,27 @@
 #include "drivers/lpit_driver.h"
 
 
+/**
+ ************************ 온습도 센서 ***************************
+ */
+
+    /**
+     * DHT11 온습도 센서 프로토콜
+     * 1. 통신개시 알림: mcu가 센서로 18ms 동안 LOW 유지하고 
+     *                  HIGH로 전환해서 20-40ms 기다림
+     *                  이 신호를 받으면 DHT11는 대기상태에서 깨어남
+     * 2. 응답신호: DHT11가 대기상태에서 깨어나 80us LOW 신호 보내고
+     *             다시 80us HIGH를 보냄으로써 준비가 됐음을 mcu에 알림
+     * 3. 온습도 정보 송신: DHT11가 40bit의 데이터열을 보낸다.
+     *                     LOW          : HIGH 보내기 전
+     *                     HIGH 26~28us : 0
+     *                     HIGH 70us    : 1    -> HIGH의 길이로 0, 1 정의
+     * 4. 데이터 수신 및 파싱: 습도(16bit) + 온도(16bit) + 체크섬(8bit) 수신
+     *                        각 16비트의 상위 8비트가 값을 의미한다.
+     *                        하위 8비트는 소수점이나 DHT11은 지원하지 않는다.
+     *                        온습도 값을 더한 값이 체크섬인데 
+     *                        일치하지 않으면 오류가 발생했음을 의미한다.  
+     */
 
 /* 온습도 센서 통신을 위한 내부 함수 선언 */
 static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data);
@@ -37,24 +58,6 @@ static bool _SHH_Read_DHT11_40bit_Data(uint8_t* data) {
     uint8_t bit_count = 0;
     uint8_t current_byte = 0;
     uint32_t timeout_counter;
-
-    /**
-     * DHT11 온습도 센서 프로토콜
-     * 1. 통신개시 알림: mcu가 센서로 18ms 동안 LOW 유지하고 
-     *                  HIGH로 전환해서 20-40ms 기다림
-     *                  이 신호를 받으면 DHT11는 대기상태에서 깨어남
-     * 2. 응답신호: DHT11가 대기상태에서 깨어나 80us LOW 신호 보내고
-     *             다시 80us HIGH를 보냄으로써 준비가 됐음을 mcu에 알림
-     * 3. 온습도 정보 송신: DHT11가 40bit의 데이터열을 보낸다.
-     *                     LOW          : HIGH 보내기 전
-     *                     HIGH 26~28us : 0
-     *                     HIGH 70us    : 1    -> HIGH의 길이로 0, 1 정의
-     * 4. 데이터 수신 및 파싱: 습도(16bit) + 온도(16bit) + 체크섬(8bit) 수신
-     *                        각 16비트의 상위 8비트가 값을 의미한다.
-     *                        하위 8비트는 소수점이나 DHT11은 지원하지 않는다.
-     *                        온습도 값을 더한 값이 체크섬인데 
-     *                        일치하지 않으면 오류가 발생했음을 의미한다.  
-     */
 
     // 1. 통신 시작 신호
     SHD_GPIO_InitPin(PIN_TEMP_HUMI, GPIO_OUTPUT);
@@ -161,32 +164,27 @@ uint8_t SHH_ReadManualControlVr(void) {
 /**
  ************************ uWave ***************************
  */
-static volatile uint16_t g_ftm1_start_time = 0;
-static volatile uint16_t g_ftm1_end_time = 0;
-static volatile bool g_is_measurement_done = false;
 
-/**
- * 초음파 센서용 FTM1 타이머를 프리러닝 카운터로 초기화한다.
- */
-void SHH_uWave_Init(void) {
+    /**
+     * HCSR04 uWave 센서 프로토콜
+     * 동작 주파수 40kHz
+     * 측정 범위: 2cm ~ 400cm
+     * 측정 각도: 약 15도
+     * Trig: MCU에서 10us 이상 HIGH 신호 제공
+     * Echo: 물체까지 왕복 시간에 비례하는 HIGH 신호 폭
+     * 동작 원리:
+     *      1. Trig 핀에 10us 이상 HIGH 신호 입력
+     *         센서가 자동으로 40kHz 초음파를 8번 발사
+     *      2. Echo 핀 LOW -> HIGH
+     *          초음파가 반사되어 돌아올 때까지 Echo 핀 HIGH 상태 유지
+     *          Echo의 HIGH 지속 시간 = 신호 송신 ~ 수신까지 걸린 시간
+     *      3. 거리 = (왕복 시간 x 음속(340m/s)) / 2
+     *         cm 단위: Echo(us) / 58 = 거리(cm)
+     */
 
-    // 1. FTM1 모듈에 클럭 활성화 (SOSCDIV2_CLK, 8MHz)
-    PCC->PCCn[PCC_FTM1_INDEX] = PCC_PCCn_PCS(1) | PCC_PCCn_CGC_MASK;
-
-    // 2. FTM1 카운터 설정
-    FTM1->MODE |= FTM_MODE_WPDIS_MASK; // 쓰기 방지 해제
-    FTM1->SC = 0; // 카운터 정지 상태에서 설정
-    FTM1->CNTIN = 0;
-    FTM1->MOD = 0xFFFF; // 최대값까지 카운트
-    FTM1->SC = FTM_SC_PS(3) | FTM_SC_CLKS(1); // Prescaler=8, 1MHz 카운터 (1us당 1카운트)
-    FTM1->MODE &= ~FTM_MODE_WPDIS_MASK; // 쓰기 방지 재활성화
-}
-
-/**
- * 초음파 거리 측정을 시작한다.
- */
+static volatile uint32_t uWave_high_duration_us;
+     
 void SHH_uWave_StartMeasurement(void) {
-    g_is_measurement_done = false;
 
     // 1. Echo 핀을 상승 에지 인터럽트로 설정
     SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_IRQ_RISING);
@@ -197,48 +195,22 @@ void SHH_uWave_StartMeasurement(void) {
     SHD_GPIO_WritePin(PIN_UWAVE_TRIG, 0);
 }
 
-/**
- * 가장 최근 측정된 거리 값을 반환한다.
- */
+
 uint16_t SHH_uWave_GetDistanceCm(void) {
-
-    if (!g_is_measurement_done) {
-        return 0xFFFF; // 아직 측정 완료 전
-    }
-
-    uint32_t pulse_duration_us = 0;
-    if (g_ftm1_end_time >= g_ftm1_start_time) {
-        pulse_duration_us = g_ftm1_end_time - g_ftm1_start_time;
-    } else {
-        // 카운터 오버플로우 처리
-        pulse_duration_us = (0xFFFF - g_ftm1_start_time) + g_ftm1_end_time;
-    }
-
-    // 1us 당 1카운트이므로, pulse_duration_us는 시간과 같음
-    return (uint16_t)(pulse_duration_us / 58);
+    if (uWave_high_duration_us == 0) return 0xFFFF;
+    return (uint16_t)(uWave_high_duration_us / 58);
 }
 
-
-/**
- * 초음파 Echo 핀의 상태 변화를 처리하는 함수 (PORTC_IRQHandler에서 호출됨)
- */
 void SHH_uWave_Echo_ISR_Handler(void) {
+    static uint32_t start_time = 0;
 
-    // 상승 에지 감지 (펄스 시작)
-    if (SHD_GPIO_ReadPin(PIN_UWAVE_ECHO) == 1) {
-        g_ftm1_start_time = FTM1->CNT; // 타이머 시작 시간 기록
-        // 다음 인터럽트는 하강 에지에서 발생하도록 변경
+    if (SHD_GPIO_ReadPin(PIN_UWAVE_ECHO)) {
+        // Rising edge
+        start_time = SHD_LPIT0_GetCurrentUs(1); 
         SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_IRQ_FALLING);
-    }
-    // 하강 에지 감지 (펄스 종료)
-    else {
-        g_ftm1_end_time = FTM1->CNT; // 타이머 종료 시간 기록
-        g_is_measurement_done = true; // 측정 완료 플래그 설정
-        SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_DISABLED); // 다음 측정을 위해 인터럽트 비활성화
-
-        // SecurityEvent_Task에 측정 완료 신호 전송
-        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-        xSemaphoreGiveFromISR(g_uWave_semaphore, &xHigherPriorityTaskWoken);
-        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    } else {
+        // Falling edge
+        uint32_t end_time = SHD_LPIT0_GetCurrentUs(1);
+        uWave_high_duration_us = end_time - start_time;
     }
 }

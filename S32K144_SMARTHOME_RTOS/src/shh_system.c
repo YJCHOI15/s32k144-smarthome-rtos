@@ -147,11 +147,12 @@ void SHH_Init(void)
     SHD_LPI2C0_Init();
     SHD_CAN0_Init();
     SHD_LPIT0_Init();
+    SHD_LPIT0_Us_Timer_Start(1);     // 초음파 echo 핀 HIGH 지속시간 측정용 free-running 타이머 시작
     SHD_LPUART1_Init(9600);
 
     /* 5. 인터럽트 설정 및 활성화 (+lpit0 타이머 주기 설정) */
     // 핀 인터럽트 설정
-    SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_IRQ_RISING);
+    // SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_IRQ_RISING); // Trig 핀 활성화 시 인터럽트 설정
     SHD_PORT_SetPinIT(PIN_BTN1, PORT_IT_IRQ_FALLING);
     SHD_PORT_SetPinIT(PIN_BTN2, PORT_IT_IRQ_FALLING);
     SHD_PORT_SetPinIT(PIN_BTN3, PORT_IT_IRQ_FALLING);

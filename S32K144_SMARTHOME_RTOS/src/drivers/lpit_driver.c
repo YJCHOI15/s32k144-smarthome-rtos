@@ -50,12 +50,32 @@ void SHD_LPIT0_SetPeriodic(uint8_t timer_ch, uint32_t period_ms, void (*callback
 /**
  * 지정된 LPIT0 채널의 타이머를 중지한다.
  */
-void SHD_LPIT0_Stop(uint8_t timer_ch)
-{
+void SHD_LPIT0_Stop(uint8_t timer_ch) {
     if (timer_ch > 3) return;
     LPIT0->CLRTEN |= (1UL << timer_ch); // 타이머 카운터 중지
     LPIT0->MIER &= ~(1UL << timer_ch);  // 인터럽트 비활성화
     g_lpit_callbacks[timer_ch] = NULL;  // 콜백 함수 등록 해제
+}
+
+void SHD_LPIT0_Us_Timer_Start(uint8_t channel) {
+    /* 채널을 Free-running 모드로 설정 */
+    LPIT0->TMR[channel].TVAL = 0xFFFFFFFF;       // Reload value (최대치)
+    LPIT0->TMR[channel].TCTRL = 0;               // 32비트 Periodic counter, chain/oneshot 끔
+    LPIT0->SETTEN |= (1UL << channel);           // Channel1 enable
+}
+
+uint32_t SHD_LPIT0_GetCurrentUs(uint8_t channel) {
+    
+    // 현재 카운터 값 읽기 (다운카운터)
+    uint32_t current = LPIT0->TMR[channel].CVAL;
+    
+    // 시작값(0xFFFFFFFF) - 현재값 = 경과 ticks
+    uint32_t elapsed_ticks = 0xFFFFFFFF - current;
+    
+    // 8MHz → 1 tick = 0.125us → us로 변환
+    uint32_t elapsed_us = elapsed_ticks / 8;
+    
+    return elapsed_us;
 }
 
 /* us 단위 delay 함수 */
@@ -80,34 +100,34 @@ void SHD_LPIT0_DelayUs(uint8_t timer_ch, uint32_t us) {
 
 /* 이 함수들은 startup.s 파일의 벡터 테이블에 각각 등록되어 있다. */
 
-void LPIT0_Ch0_IRQHandler(void) {
-    LPIT0->MSR = LPIT_MSR_TIF0_MASK;
+// void LPIT0_Ch0_IRQHandler(void) {
+//     LPIT0->MSR = LPIT_MSR_TIF0_MASK;
 
-    if (g_lpit_callbacks[0] != NULL) {
-        g_lpit_callbacks[0]();
-    }
-}
+//     if (g_lpit_callbacks[0] != NULL) {
+//         g_lpit_callbacks[0]();
+//     }
+// }
 
-// 500ms CAN 상태 Broadcast
-void LPIT0_Ch1_IRQHandler(void) {
-    LPIT0->MSR = LPIT_MSR_TIF1_MASK;
-    if (g_lpit_callbacks[1] != NULL) {
-        g_lpit_callbacks[1]();
-    }
-}
+// LPIT0 CH1: uWave 센서에서 현재 us를 측정하기 위해 사용
+// void LPIT0_Ch1_IRQHandler(void) {
+//     LPIT0->MSR = LPIT_MSR_TIF1_MASK;
+//     if (g_lpit_callbacks[1] != NULL) {
+//         g_lpit_callbacks[1]();
+//     }
+// }
 
-// 보안 경고 상태일 때 1초마다 인터럽트를 발생시켜 LED 상태를 반전시킴
-void LPIT0_Ch2_IRQHandler(void) {
-    LPIT0->MSR = LPIT_MSR_TIF2_MASK;
-    if (g_lpit_callbacks[2] != NULL) {
-        g_lpit_callbacks[2]();
-    }
-}
+// LPIT0 CH2: 보안 경고 상태일 때 1초마다 인터럽트를 발생시켜 LED 상태를 반전시킴
+// void LPIT0_Ch2_IRQHandler(void) {
+//     LPIT0->MSR = LPIT_MSR_TIF2_MASK;
+//     if (g_lpit_callbacks[2] != NULL) {
+//         g_lpit_callbacks[2]();
+//     }
+// }
 
-// LPIT0 CH3은 us 딜레이 함수에서 사용
-void LPIT0_Ch3_IRQHandler(void) {
-    LPIT0->MSR = LPIT_MSR_TIF3_MASK;
-    if (g_lpit_callbacks[3] != NULL) {
-        g_lpit_callbacks[3]();
-    }
-}
+// LPIT0 CH3: us 딜레이 함수에서 사용
+// void LPIT0_Ch3_IRQHandler(void) {
+//     LPIT0->MSR = LPIT_MSR_TIF3_MASK;
+//     if (g_lpit_callbacks[3] != NULL) {
+//         g_lpit_callbacks[3]();
+//     }
+// }

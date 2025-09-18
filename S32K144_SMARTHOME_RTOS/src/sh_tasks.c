@@ -28,7 +28,6 @@ SemaphoreHandle_t g_display_data_mutex;
 SemaphoreHandle_t g_uart_mutex;
 
 SemaphoreHandle_t g_button_interrupt_semaphore;
-SemaphoreHandle_t g_uWave_semaphore;
 
 EventGroupHandle_t g_security_event_group;
 
@@ -56,12 +55,16 @@ static void _handle_sensor_data(sensor_data_t* data);
 static void _handle_security_event(void);
 static void _run_monitoring_mode_logic(const sensor_data_t* data);
 static void _update_display(void);
-static void _security_led_timer_callback(void);
-static void _can_rx_callback(uint32_t id, uint8_t* data, uint8_t dlc);
+static void __security_led_timer_callback(void);
+static void __buzzer_timer_callback(TimerHandle_t xTimer);
+static void __can_rx_callback(uint32_t id, uint8_t* data, uint8_t dlc);
 
 /********************************************************************/
 /************************ MainControlTask ***************************/
 /********************************************************************/
+
+static volatile bool g_is_buzzer_started;
+
 void SH_MainControl_Task(void *pvParameters) {
 
     (void)pvParameters;
@@ -135,6 +138,7 @@ static void _handle_command(command_msg_t* cmd) {
                 } else if (current_mode == MODE_MANUAL) {
                     g_system_status.current_mode = MODE_SECURITY;
                     SHH_SecurityStandbyLED_On(); 
+                    g_is_buzzer_started = false;
                 } else if (current_mode == MODE_SECURITY) {
                     g_system_status.current_mode = MODE_MONITORING;
                     SHH_SecurityStandbyLED_Off();
@@ -190,6 +194,7 @@ static void _handle_command(command_msg_t* cmd) {
                 g_system_status.current_mode = (system_mode_t)cmd->value;
                 // CAN 명령으로 모드 변경 시 알람 상태도 해제
                 g_system_status.is_alarm_active = false; 
+                g_is_buzzer_started = false;
                 SHH_Buzzer_StopAlarm();
                 SHH_SecurityWarningLED_Off();
                 SHH_ModeLED_Set(g_system_status.current_mode);
@@ -266,6 +271,8 @@ static void _handle_sensor_data(sensor_data_t* data) {
     _update_display();
 }
 
+static TimerHandle_t g_buzzer_timer = NULL;
+
 static void _handle_security_event(void) {
 
     xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
@@ -285,13 +292,34 @@ static void _handle_security_event(void) {
 
     // 시청각적 경고 시작
     SHH_SecurityStandbyLED_Off();       // 대기 LED2 끄기
-    SHD_LPIT0_SetPeriodic(2, 1000, _security_led_timer_callback);
-    SHH_Buzzer_StartAlarm();            // 부저 울림 시작 
+    // SHD_LPIT0_SetPeriodic(2, 1000, __security_led_timer_callback);
+    
+    if (!g_is_buzzer_started) {
+        SHH_Buzzer_StartAlarm();            // 부저 울림 시작 
 
+        // 부저 타이머 시작 (2초 원샷)
+        if (g_buzzer_timer == NULL) {
+            g_buzzer_timer = xTimerCreate("BuzzerTimer",
+                                        pdMS_TO_TICKS(3000), // 실제 약 2초
+                                        pdFALSE,             // one-shot
+                                        NULL,
+                                        __buzzer_timer_callback);
+        }
+
+        if (g_buzzer_timer != NULL) {
+            xTimerReset(g_buzzer_timer, 0);
+        }
+        g_is_buzzer_started = true;
+    }
 }
 
-static void _security_led_timer_callback(void) {
+static void __security_led_timer_callback(void) {
     SHH_SecurityWarningLED_Toggle();
+}
+
+static void __buzzer_timer_callback(TimerHandle_t xTimer) {
+    (void)xTimer;
+    SHH_Buzzer_StopAlarm();   // 2초 뒤에 부저 끄기
 }
 
 static void _run_monitoring_mode_logic(const sensor_data_t* data) {
@@ -454,7 +482,7 @@ void PORTE_IRQHandler(void) {
 /**************************** CanCommTask ***************************/
 /********************************************************************/
 void SH_Can_Init(void) {
-    SHD_CAN0_RegisterRxCallback(_can_rx_callback);
+    SHD_CAN0_RegisterRxCallback(__can_rx_callback);
 }
 
 void SH_CanComm_Task(void *pvParameters) {
@@ -489,7 +517,7 @@ void SH_CanComm_Task(void *pvParameters) {
     }
 }
 
-static void _can_rx_callback(uint32_t id, uint8_t* data, uint8_t dlc) {
+static void __can_rx_callback(uint32_t id, uint8_t* data, uint8_t dlc) {
 
     command_msg_t cmd_msg;
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -571,7 +599,7 @@ void SH_Display_Task(void *pvParameters) {
 
 void FND_Scan_Task(void *pvParameters) {
     (void)pvParameters;
-    const TickType_t xPeriod = pdMS_TO_TICKS(2); // 1ms 주기
+    const TickType_t xPeriod = pdMS_TO_TICKS(2);
     TickType_t xLastWakeTime = xTaskGetTickCount();
 
     for (;;) {
@@ -590,28 +618,22 @@ void SH_SecurityEvent_Task(void *pvParameters) {
     (void)pvParameters;
 
     for (;;) {
-        // 1. 데이터시트 권장사항(60ms 이상)에 따라 100ms마다 측정 사이클 실행
+        // 데이터시트 권장사항(60ms 이상)에 따라 100ms마다 측정 사이클 실행
         vTaskDelay(pdMS_TO_TICKS(100));
 
-        // 2. 현재 시스템이 보안 모드일 때만 거리 측정 수행
+        // 현재 시스템이 보안 모드일 때만 거리 측정 수행
         xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
         bool is_security_mode = (g_system_status.current_mode == MODE_SECURITY);
         xSemaphoreGive(g_system_status_mutex);
 
-        if (is_security_mode)
-        {
-            // 2. 거리 측정 시작 (이 함수는 즉시 반환됨)
+        if (is_security_mode) {
             SHH_uWave_StartMeasurement();
 
-            // 3. 측정 완료 인터럽트를 기다림 (최대 50ms 타임아웃)
-            if (xSemaphoreTake(g_uWave_semaphore, pdMS_TO_TICKS(50)) == pdTRUE) {
+            uint16_t distance_cm = SHH_uWave_GetDistanceCm();
+            SHH_Uart_Printf("distance: %d\r\n", distance_cm);
 
-                // 4. 신호 수신 시 거리 값을 가져와서 판단
-                uint16_t distance_cm = SHH_uWave_GetDistanceCm();
-
-                if ((distance_cm != 0xFFFF) && (distance_cm < SECURITY_DISTANCE_THRESHOLD_CM)) {
-                    xEventGroupSetBits(g_security_event_group, 0x01);
-                }
+            if ((distance_cm != 0xFFFF) && (distance_cm < SECURITY_DISTANCE_THRESHOLD_CM)) {
+                xEventGroupSetBits(g_security_event_group, 0x01);
             }
         }
     }
@@ -619,14 +641,13 @@ void SH_SecurityEvent_Task(void *pvParameters) {
 
 void PORTC_IRQHandler(void) {
 
-    // Echo 핀에서 인터럽트가 발생했는지 확인
+    // Trig 핀이 초음파를 보내면 Echo 핀이 HIGH 상태가 되어 인터럽트 핸들러가 실행됨
     if ((PORTC->ISFR & (1UL << 13))) {
-        
-        // HAL에 있는 핸들러 호출
         SHH_uWave_Echo_ISR_Handler();
+
+        // 발생한 모든 핀의 인터럽트 플래그를 클리어
+        // 주의: 다른 PORTC 인터럽트 소스가 있다면, 해당 플래그만 선택적으로 클리어해야 함
+        PORTC->ISFR = 0xFFFFFFFF;
     }
 
-    // 발생한 모든 핀의 인터럽트 플래그를 클리어
-    // 주의: 다른 PORTC 인터럽트 소스가 있다면, 해당 플래그만 선택적으로 클리어해야 함
-    PORTC->ISFR = 0xFFFFFFFF;
 }
