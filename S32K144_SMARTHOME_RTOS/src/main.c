@@ -49,7 +49,7 @@ int main(void)
     xTaskCreate(SH_Sensor_Task, "Sensor", 512, NULL, 4, NULL);
     xTaskCreate(SH_ButtonInput_Task, "Button", 512, NULL, 6, NULL);
     xTaskCreate(SH_Display_Task, "Display", 1024, NULL, 3, NULL);
-    xTaskCreate(FND_Scan_Task, "FNDScanTask", 128, NULL, 3, NULL);
+    // xTaskCreate(FND_Scan_Task, "FNDScanTask", 128, NULL, 3, NULL);
     // xTaskCreate(SH_SecurityEvent_Task, "Security", 256, NULL, 7, NULL);
     // xTaskCreate(SH_CanComm_Task, "CAN", 256, NULL, 4, NULL);
 

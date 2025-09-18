@@ -49,7 +49,7 @@ static int32_t g_current_step = 0; // 현재 스텝 위치 추적
 
 void SHH_Blinds_Move(int32_t steps) {
 
-    int direction = (steps > 0) ? 1 : -1;
+    int direction = (steps > 0) ? -1 : 1;
     uint32_t num_steps = (steps > 0) ? steps : -steps;
 
     for (uint32_t i = 0; i < num_steps; i++) {
@@ -68,8 +68,12 @@ void SHH_Blinds_Move(int32_t steps) {
          * 스텝 모터가 물리적으로 회전할 시간을 확보하기 위해
          * 이 곳에 약 2ms ~ 10ms 정도의 delay 코드가 반드시 필요
          */
-        vTaskDelay(pdMS_TO_TICKS(2));
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
+    SHD_GPIO_WritePin(PIN_STEP_MOTOR1, 0);
+    SHD_GPIO_WritePin(PIN_STEP_MOTOR2, 0);
+    SHD_GPIO_WritePin(PIN_STEP_MOTOR3, 0);
+    SHD_GPIO_WritePin(PIN_STEP_MOTOR4, 0);
 }
 
 

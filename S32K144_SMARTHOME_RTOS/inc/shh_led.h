@@ -19,6 +19,6 @@ void SHH_SecurityWarningLED_Off(void);
 void SHH_SecurityWarningLED_Toggle(void);
 
 /* 외부 조명(LED 8) 밝기 제어(PWM) */
-void SHH_MainLight_SetBrightness(uint8_t brightness_percent);
+void SHH_MainLight_SetBrightness(int8_t brightness_percent);
 
 #endif /* SHH_LED_H */

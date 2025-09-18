@@ -159,7 +159,7 @@ static void _handle_command(command_msg_t* cmd) {
                         SHH_DoorLock_Open();
                         break;
                     case DEVICE_STEP:
-                        SHH_Blinds_Move(20); // 정방향으로 20스텝
+                        SHH_Blinds_Move(100); // 정방향으로 20스텝
                         break;
                     case DEVICE_RELAY:
                         SHH_ExternalPower_On();
@@ -175,7 +175,7 @@ static void _handle_command(command_msg_t* cmd) {
                          SHH_DoorLock_Close();
                          break;
                      case DEVICE_STEP:
-                         SHH_Blinds_Move(-20); // 역방향으로 20스텝
+                         SHH_Blinds_Move(-100); // 역방향으로 20스텝
                          break;
                      case DEVICE_RELAY:
                          SHH_ExternalPower_Off();
@@ -304,8 +304,8 @@ static void _run_monitoring_mode_logic(const sensor_data_t* data) {
     }
 
     // 자동 조명 제어 (밝기 기반)
-    uint8_t brightness_percent = (uint8_t)((data->cds_raw * 100) / 4095);
-    SHH_MainLight_SetBrightness(100 - brightness_percent);
+    int8_t brightness_percent = (int8_t)((data->cds_raw * 100) / 4095);
+    SHH_MainLight_SetBrightness(65 - brightness_percent);
 }
 
 static void _update_display(void) {
@@ -334,15 +334,15 @@ static void _update_display(void) {
             snprintf(temp_device_str, 20, "Selected:         ");
             break;
             case MODE_MANUAL:
-            snprintf(temp_mode_str, 20, "Mode: Manual");
+            snprintf(temp_mode_str, 20, "Mode: Manual    ");
             switch(g_selected_device) {
                 case DEVICE_SERVO: snprintf(temp_device_str, 20, "Selected: DoorLock"); break;
-                case DEVICE_STEP:  snprintf(temp_device_str, 20, "Selected: Blinds");   break;
+                case DEVICE_STEP:  snprintf(temp_device_str, 20, "Selected: Blinds  ");   break;
                 case DEVICE_RELAY: snprintf(temp_device_str, 20, "Selected: ExtPower"); break;
             }
             break;
         case MODE_SECURITY:
-            snprintf(temp_mode_str, 20, "Mode: Security");
+            snprintf(temp_mode_str, 20, "Mode: Security  ");
             snprintf(temp_device_str, 20, "Selected:         ");
             break;
     } 
@@ -374,7 +374,7 @@ void SH_Sensor_Task(void *pvParameters) {
 
     for (;;) {
         // 1. 주기적으로 실행
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(500));
 
         // 2. HAL 함수를 호출하여 모든 센서 값을 읽어온다.
         sensor_data_to_send.temperature = SHH_ReadTemperature();
