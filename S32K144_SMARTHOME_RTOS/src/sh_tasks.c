@@ -159,7 +159,7 @@ static void _handle_command(command_msg_t* cmd) {
                         SHH_DoorLock_Open();
                         break;
                     case DEVICE_STEP:
-                        SHH_Blinds_Move(100); // 정방향으로 20스텝
+                        SHH_Blinds_Move(200); // 정방향으로 20스텝
                         break;
                     case DEVICE_RELAY:
                         SHH_ExternalPower_On();
@@ -175,7 +175,7 @@ static void _handle_command(command_msg_t* cmd) {
                          SHH_DoorLock_Close();
                          break;
                      case DEVICE_STEP:
-                         SHH_Blinds_Move(-100); // 역방향으로 20스텝
+                         SHH_Blinds_Move(-200); // 역방향으로 20스텝
                          break;
                      case DEVICE_RELAY:
                          SHH_ExternalPower_Off();

@@ -15,7 +15,6 @@ void SHD_FTM0_Init(void) {
 
 /**
  * FTM0의 특정 채널을 PWM 출력 모드로 초기화한다.
- * 서보 모터 제어를 위해 PWM 주기는 50Hz (20ms)로 설정된다.
  */
 void SHD_FTM0_InitPwmChannel(uint8_t channel) {
 
@@ -40,7 +39,7 @@ void SHD_FTM0_InitPwmChannel(uint8_t channel) {
     }
 
     /* 2. 해당 채널을 Edge-Aligned PWM, Low-true pulses 모드로 설정 */
-    FTM0->CONTROLS[channel].CnSC = FTM_CnSC_MSB_MASK | FTM_CnSC_ELSB_MASK | FTM_CnSC_ELSA_MASK;
+    FTM0->CONTROLS[channel].CnSC = FTM_CnSC_MSB_MASK | FTM_CnSC_ELSB_MASK;
     
     /* 3. [수정] 해당 채널의 PWM 출력을 물리적 핀으로 활성화한다. */
     /* SC 레지스터는 쓰기 방지가 되어 있으므로, 일시적으로 해제해야 한다. */

@@ -24,15 +24,24 @@ void SHH_Fan_Off(void) {
 // 90도  => 1.5ms 펄스폭 => (1.5ms / 20ms) * 100 = 7.5% (8로 반올림)
 // 1ms와 1.5ms는 서보 모터를 제어하는 표준화된 신호 길이다.
 
-#define DOOR_DUTY_CYCLE_CLOSED 5
-#define DOOR_DUTY_CYCLE_OPEN   8
+static uint8_t _angleToDuty(uint8_t angle);
 
 void SHH_DoorLock_Open(void) {
-    SHD_FTM0_SetDutyCycle(2, DOOR_DUTY_CYCLE_OPEN);
+    // 오른쪽 90도
+    uint8_t duty = _angleToDuty(90);
+    SHD_FTM0_SetDutyCycle(2, duty);  // duty = 2%
 }
 
 void SHH_DoorLock_Close(void) {
-    SHD_FTM0_SetDutyCycle(2, DOOR_DUTY_CYCLE_CLOSED);
+    // 왼쪽 0도 (제자리)
+    uint8_t duty = _angleToDuty(0);
+    SHD_FTM0_SetDutyCycle(2, duty);  // duty = 7%
+}
+
+static uint8_t _angleToDuty(uint8_t angle) {
+    // angle: 0~90
+    // duty: 7% (왼쪽) → 2% (오른쪽)
+    return (uint8_t)(7 - ((angle * 5) / 90));
 }
 
 
