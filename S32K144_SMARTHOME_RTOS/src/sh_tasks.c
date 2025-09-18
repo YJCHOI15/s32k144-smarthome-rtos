@@ -481,77 +481,87 @@ void PORTE_IRQHandler(void) {
 /********************************************************************/
 /**************************** CanCommTask ***************************/
 /********************************************************************/
-void SH_Can_Init(void) {
-    SHD_CAN0_RegisterRxCallback(__can_rx_callback);
-}
+// void SH_Can_Init(void) {
+//     SHD_CAN0_RegisterRxCallback(__can_rx_callback);
+// }
 
 void SH_CanComm_Task(void *pvParameters) {
 
     (void)pvParameters;
     uint8_t can_data_buffer[8];
 
+    uint8_t test_buf[8] = {0};
+    uint32_t cnt = 0;
+
     for (;;) {
 
-        // 1. 500ms마다 주기적으로 실행
-        vTaskDelay(pdMS_TO_TICKS(500));
+        // 1. 주기적으로 실행
+        vTaskDelay(pdMS_TO_TICKS(1000));
 
-        // 2. 뮤텍스로 보호하며 현재 시스템 상태와 센서 데이터를 읽어옴
-        xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
-        system_status_t current_status = g_system_status;
-        sensor_data_t current_sensor_data = g_latest_sensor_data;
-        xSemaphoreGive(g_system_status_mutex);
+        // 1. 데이터 준비
+        test_buf[0] = (uint8_t)(cnt & 0xFF);
+        test_buf[1] = (uint8_t)((cnt >> 8) & 0xFF);
 
-        // 아래 코드 주석 -> FND 됨, 버튼 안됨 
-        // 아래 코드 주석 해제 -> FND 안됨, 버튼 잘됨
-        // 3. 환경 데이터 CAN 메시지 전송
-        can_data_buffer[0] = current_sensor_data.temperature;
-        can_data_buffer[1] = current_sensor_data.humidity;
-        can_data_buffer[2] = (uint8_t)(current_sensor_data.cds_raw >> 8);
-        can_data_buffer[3] = (uint8_t)(current_sensor_data.cds_raw & 0xFF);
-        SHD_CAN0_Transmit(CAN_ID_STATUS_ENV, can_data_buffer, 4);
+        // 2. CAN 송신
+        SHD_CAN0_Transmit(0x123, test_buf, 2);
 
-        // 4. 시스템 상태 CAN 메시지 전송
-        can_data_buffer[0] = (uint8_t)current_status.current_mode;
-        can_data_buffer[1] = (uint8_t)current_status.is_alarm_active;
-        SHD_CAN0_Transmit(CAN_ID_STATUS_SYSTEM, can_data_buffer, 2);
+        cnt++;
+
+        // // 2. 뮤텍스로 보호하며 현재 시스템 상태와 센서 데이터를 읽어옴
+        // xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
+        // system_status_t current_status = g_system_status;
+        // sensor_data_t current_sensor_data = g_latest_sensor_data;
+        // xSemaphoreGive(g_system_status_mutex);
+
+        // // 3. 환경 데이터 CAN 메시지 전송
+        // can_data_buffer[0] = current_sensor_data.temperature;
+        // can_data_buffer[1] = current_sensor_data.humidity;
+        // can_data_buffer[2] = (uint8_t)(current_sensor_data.cds_raw >> 8);
+        // can_data_buffer[3] = (uint8_t)(current_sensor_data.cds_raw & 0xFF);
+        // SHD_CAN0_Transmit(CAN_ID_STATUS_ENV, can_data_buffer, 4);
+
+        // // 4. 시스템 상태 CAN 메시지 전송
+        // can_data_buffer[0] = (uint8_t)current_status.current_mode;
+        // can_data_buffer[1] = (uint8_t)current_status.is_alarm_active;
+        // SHD_CAN0_Transmit(CAN_ID_STATUS_SYSTEM, can_data_buffer, 2);
     }
 }
 
-static void __can_rx_callback(uint32_t id, uint8_t* data, uint8_t dlc) {
+// static void __can_rx_callback(uint32_t id, uint8_t* data, uint8_t dlc) {
 
-    command_msg_t cmd_msg;
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+//     command_msg_t cmd_msg;
+//     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-    switch(id) {
+//     switch(id) {
 
-        case CAN_ID_CMD_SET_MODE:
-            if (dlc > 0) {
-                cmd_msg.command_id = CAN_ID_CMD_SET_MODE;
-                cmd_msg.value = data[0]; // 모드 값
-                xQueueSendFromISR(g_command_queue, &cmd_msg, &xHigherPriorityTaskWoken);
-            }
-            break;
+//         case CAN_ID_CMD_SET_MODE:
+//             if (dlc > 0) {
+//                 cmd_msg.command_id = CAN_ID_CMD_SET_MODE;
+//                 cmd_msg.value = data[0]; // 모드 값
+//                 xQueueSendFromISR(g_command_queue, &cmd_msg, &xHigherPriorityTaskWoken);
+//             }
+//             break;
 
-        case CAN_ID_CMD_ALARM_OFF:
-            cmd_msg.command_id = CAN_ID_CMD_ALARM_OFF;
-            cmd_msg.value = 0;
-            xQueueSendFromISR(g_command_queue, &cmd_msg, &xHigherPriorityTaskWoken);
-            break;
+//         case CAN_ID_CMD_ALARM_OFF:
+//             cmd_msg.command_id = CAN_ID_CMD_ALARM_OFF;
+//             cmd_msg.value = 0;
+//             xQueueSendFromISR(g_command_queue, &cmd_msg, &xHigherPriorityTaskWoken);
+//             break;
             
-        case CAN_ID_CMD_DEVICE_CTRL:
-            if (dlc > 1) {
-                cmd_msg.command_id = CAN_ID_CMD_DEVICE_CTRL;
-                // value에 장치 ID와 동작 값을 압축하여 전달
-                cmd_msg.value = (int32_t)((data[1] << 8) | data[0]);
-                xQueueSendFromISR(g_command_queue, &cmd_msg, &xHigherPriorityTaskWoken);
-            }
-            break;
-    }
+//         case CAN_ID_CMD_DEVICE_CTRL:
+//             if (dlc > 1) {
+//                 cmd_msg.command_id = CAN_ID_CMD_DEVICE_CTRL;
+//                 // value에 장치 ID와 동작 값을 압축하여 전달
+//                 cmd_msg.value = (int32_t)((data[1] << 8) | data[0]);
+//                 xQueueSendFromISR(g_command_queue, &cmd_msg, &xHigherPriorityTaskWoken);
+//             }
+//             break;
+//     }
     
-    // 만약 큐 전송으로 인해 더 높은 우선순위의 태스크가 깨어났다면,
-    // ISR 종료 후 즉시 컨텍스트 스위칭을 수행합니다.
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}
+//     // 만약 큐 전송으로 인해 더 높은 우선순위의 태스크가 깨어났다면,
+//     // ISR 종료 후 즉시 컨텍스트 스위칭을 수행합니다.
+//     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+// }
 
 /********************************************************************/
 /**************************** DisplayTask & FNDScanTask**************/
