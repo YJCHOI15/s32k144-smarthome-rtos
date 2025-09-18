@@ -137,7 +137,6 @@ typedef struct {
 typedef struct {
     system_mode_t current_mode;
     bool is_alarm_active; // 보안 경고 활성화 여부
-    bool is_alarm_warning; // 보안 경고 상태 활성화 여부
 } system_status_t;
 
 /* CAN ID 정의 */

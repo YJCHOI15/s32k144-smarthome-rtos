@@ -117,12 +117,12 @@ void SHD_LPIT0_DelayUs(uint8_t timer_ch, uint32_t us) {
 // }
 
 // LPIT0 CH2: 보안 경고 상태일 때 1초마다 인터럽트를 발생시켜 LED 상태를 반전시킴
-// void LPIT0_Ch2_IRQHandler(void) {
-//     LPIT0->MSR = LPIT_MSR_TIF2_MASK;
-//     if (g_lpit_callbacks[2] != NULL) {
-//         g_lpit_callbacks[2]();
-//     }
-// }
+void LPIT0_Ch2_IRQHandler(void) {
+    LPIT0->MSR = LPIT_MSR_TIF2_MASK;
+    if (g_lpit_callbacks[2] != NULL) {
+        g_lpit_callbacks[2](); // __security_led_timer_callback() 호출
+    }
+}
 
 // LPIT0 CH3: us 딜레이 함수에서 사용
 // void LPIT0_Ch3_IRQHandler(void) {

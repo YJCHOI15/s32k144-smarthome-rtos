@@ -292,7 +292,7 @@ static void _handle_security_event(void) {
 
     // 시청각적 경고 시작
     SHH_SecurityStandbyLED_Off();       // 대기 LED2 끄기
-    // SHD_LPIT0_SetPeriodic(2, 1000, __security_led_timer_callback);
+    SHD_LPIT0_SetPeriodic(2, 200, __security_led_timer_callback);
     
     if (!g_is_buzzer_started) {
         SHH_Buzzer_StartAlarm();            // 부저 울림 시작 
@@ -471,7 +471,7 @@ void PORTE_IRQHandler(void) {
     xSemaphoreGiveFromISR(g_button_interrupt_semaphore, &xHigherPriorityTaskWoken);
 
     // 버튼 핀만 클리어
-    PORTE->ISFR = (1 << 13) | (1 << 14) | (1 << 15) | (1 << 16);
+    PORTE->ISFR = (1UL << 13) | (1UL << 14) | (1UL << 15) | (1UL << 16);
 
     // 만약 세마포어 전달로 인해 더 높은 우선순위의 태스크가 깨어났다면,
     // 즉시 컨텍스트 스위칭을 요청한다.
@@ -647,7 +647,7 @@ void PORTC_IRQHandler(void) {
 
         // 발생한 모든 핀의 인터럽트 플래그를 클리어
         // 주의: 다른 PORTC 인터럽트 소스가 있다면, 해당 플래그만 선택적으로 클리어해야 함
-        PORTC->ISFR = 0xFFFFFFFF;
+        PORTC->ISFR = (1UL << 13);
     }
 
 }
