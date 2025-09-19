@@ -165,9 +165,6 @@ void SHH_Init(void)
     SHD_IT_EnableIRQ(PORTE_IRQn);             // 버튼(PTE13-16)
     SHD_IT_SetPriority(PORTE_IRQn, 8);
 
-    SHD_IT_EnableIRQ(CAN0_ORed_0_15_MB_IRQn); // CAN0 수신
-    SHD_IT_SetPriority(CAN0_ORed_0_15_MB_IRQn, 6);
-
     // SHD_IT_EnableIRQ(LPIT0_Ch0_IRQn);         
     // SHD_IT_SetPriority(LPIT0_Ch0_IRQn, 10);
 

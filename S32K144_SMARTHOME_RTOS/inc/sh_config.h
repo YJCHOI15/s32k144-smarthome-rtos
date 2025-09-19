@@ -94,9 +94,9 @@ typedef enum {
     CMD_BTN3_DEVICE_ACTION_POSITIVE,
     CMD_BTN4_DEVICE_ACTION_NEGATIVE,
     /* CAN 원격 명령 */
-    CMD_CAN_SET_MODE,
-    CMD_CAN_CONTROL_DEVICE,
-    CMD_CAN_ALARM_OFF
+    CMD_CAN_SET_MODE = 0x20,
+    CMD_CAN_ALARM_OFF = 0x21,
+    CMD_CAN_CONTROL_DEVICE = 0x22
 } command_id_t;
 
 /* Command Queue를 통해 전달될 메시지 구조체 */
