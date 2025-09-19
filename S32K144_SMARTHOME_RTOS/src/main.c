@@ -44,8 +44,8 @@ int main(void)
     g_security_event_group = xEventGroupCreate();
 
     /* RTOS 태스크 생성 */
-    // xTaskCreate(SH_MainControl_Task, "MainCtrl", 2048, NULL, 5, NULL);
-    // xTaskCreate(SH_Sensor_Task, "Sensor", 512, NULL, 4, NULL);
+    xTaskCreate(SH_MainControl_Task, "MainCtrl", 2048, NULL, 5, NULL);
+    xTaskCreate(SH_Sensor_Task, "Sensor", 512, NULL, 4, NULL);
     // xTaskCreate(SH_ButtonInput_Task, "Button", 512, NULL, 6, NULL);
     // xTaskCreate(SH_Display_Task, "Display", 1024, NULL, 3, NULL);
     // xTaskCreate(FND_Scan_Task, "FNDScanTask", 128, NULL, 3, NULL);

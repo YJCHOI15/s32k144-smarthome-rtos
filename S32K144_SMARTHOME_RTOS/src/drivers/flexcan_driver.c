@@ -27,7 +27,7 @@ void SHD_CAN0_Init(void) {
                 | CAN_CTRL1_RJW(3);      // 재동기 점프 폭
 
     /* 4. 메시지 버퍼 초기화 */
-    for(int i=0; i<32; i++) {
+    for(int i=0; i < 32; i++) {
         CAN0->RAMn[i*4 + 0] = 0; // CS
         CAN0->RAMn[i*4 + 1] = 0; // ID
         CAN0->RAMn[i*4 + 2] = 0; // DATA[0..3]
@@ -35,8 +35,9 @@ void SHD_CAN0_Init(void) {
     }
 
     /* 5. 수신 MB 설정 (MB4를 Rx 전용) */
-    CAN0->RAMn[4*4 + 1] = (0x123 << 18); // 수신 ID
-    CAN0->RAMn[4*4 + 0] = (4 << 24);     // CODE=4 (Rx Empty)
+    CAN0->RXIMR[4] = 0x00000000;
+    CAN0->RAMn[4*4 + 1] = 0;          // ID 무시
+    CAN0->RAMn[4*4 + 0] = (4 << 24);  // Rx Empty
 
     /* 6. 송신 MB 설정 (MB0를 Tx 전용) */
     CAN0->RAMn[0*4 + 0] = (8 << 24); // CODE=8 (Tx Inactive)
@@ -58,6 +59,44 @@ void SHD_CAN0_Transmit(uint32_t id, uint8_t* data, uint8_t dlc) {
 
     /* CS(DLC + CODE=Transmit) */
     CAN0->RAMn[0*4 + 0] = (0xC << 24) | (dlc << 16); // CODE=0xC (Tx Data Frame)
+}
+
+void SHD_CAN0_CheckRx(void) {
+    /* MB4 수신 플래그 확인 */
+    if (CAN0->IFLAG1 & (1 << 4)) {
+        /* Control/Status */
+        uint32_t cs = CAN0->RAMn[4*4 + 0];
+        /* ID */
+        uint32_t id = (CAN0->RAMn[4*4 + 1] >> 18) & 0x7FF; // 표준 11비트 ID
+        /* DLC */
+        uint8_t dlc = (cs >> 16) & 0x0F;
+
+        /* Data 영역 */
+        uint32_t data0 = CAN0->RAMn[4*4 + 2]; // DATA[0..3]
+        uint32_t data1 = CAN0->RAMn[4*4 + 3]; // DATA[4..7]
+
+        uint8_t rx_data[8];
+        rx_data[0] = (data0 >> 24) & 0xFF;
+        rx_data[1] = (data0 >> 16) & 0xFF;
+        rx_data[2] = (data0 >> 8)  & 0xFF;
+        rx_data[3] = (data0)       & 0xFF;
+        rx_data[4] = (data1 >> 24) & 0xFF;
+        rx_data[5] = (data1 >> 16) & 0xFF;
+        rx_data[6] = (data1 >> 8)  & 0xFF;
+        rx_data[7] = (data1)       & 0xFF;
+
+        /* 출력 */
+        SHH_Uart_Printf("RX Frame: ID=0x%03X DLC=%d Data=", id, dlc);
+        for (int i=0; i<dlc; i++) {
+            SHH_Uart_Printf("%02X ", rx_data[i]);
+        }
+        SHH_Uart_Printf("\n");
+
+        /* 플래그 클리어 (다시 수신 가능하도록) */
+        CAN0->IFLAG1 = (1 << 4);
+        /* MB4를 다시 Rx Empty 상태로 */
+        CAN0->RAMn[4*4 + 0] = (4 << 24);
+    }
 }
 
 /**
