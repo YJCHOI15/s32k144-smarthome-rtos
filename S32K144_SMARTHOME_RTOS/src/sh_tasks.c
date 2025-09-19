@@ -481,17 +481,19 @@ void PORTE_IRQHandler(void) {
 /********************************************************************/
 /**************************** CanCommTask ***************************/
 /********************************************************************/
-// void SH_Can_Init(void) {
-//     SHD_CAN0_RegisterRxCallback(__can_rx_callback);
-// }
+void SH_Can_Init(void) {
+    // SHD_CAN0_RegisterRxCallback(__can_rx_callback);
+    CAN0->IMASK1 |= (1 << 4);
+}
 
 void SH_CanComm_Task(void *pvParameters) {
 
     (void)pvParameters;
+    SH_Can_Init();
     uint8_t can_data_buffer[8];
 
-    uint8_t test_buf[8] = {0};
-    uint32_t cnt = 0;
+    // uint8_t test_buf[8] = {0};
+    // uint32_t cnt = 0;
 
     for (;;) {
 
@@ -504,25 +506,25 @@ void SH_CanComm_Task(void *pvParameters) {
         // SHD_CAN0_Transmit(0x123, test_buf, 2);
         // cnt++;
 
-        // // 수신 테스트
-        // SHD_CAN0_CheckRx();
+        // 수신 테스트
+        SHD_CAN0_CheckRx();
 
-        // 2. 뮤텍스로 보호하며 현재 시스템 상태와 센서 데이터를 읽어옴
-        xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
-        system_status_t current_status = g_system_status;
-        sensor_data_t current_sensor_data = g_latest_sensor_data;
-        xSemaphoreGive(g_system_status_mutex);
+        // // 2. 뮤텍스로 보호하며 현재 시스템 상태와 센서 데이터를 읽어옴
+        // xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
+        // system_status_t current_status = g_system_status;
+        // sensor_data_t current_sensor_data = g_latest_sensor_data;
+        // xSemaphoreGive(g_system_status_mutex);
 
-        // 3. 환경 데이터 CAN 메시지 전송
-        can_data_buffer[0] = current_sensor_data.temperature;
-        can_data_buffer[1] = current_sensor_data.humidity;
-        can_data_buffer[2] = (uint8_t)((current_sensor_data.cds_raw * 100) / 4095);
-        SHD_CAN0_Transmit(CAN_ID_STATUS_ENV, can_data_buffer, 3);
+        // // 3. 환경 데이터 CAN 메시지 전송
+        // can_data_buffer[0] = current_sensor_data.temperature;
+        // can_data_buffer[1] = current_sensor_data.humidity;
+        // can_data_buffer[2] = (uint8_t)((current_sensor_data.cds_raw * 100) / 4095);
+        // SHD_CAN0_Transmit(CAN_ID_STATUS_ENV, can_data_buffer, 3);
 
-        // 4. 시스템 상태 CAN 메시지 전송
-        can_data_buffer[0] = (uint8_t)current_status.current_mode;
-        can_data_buffer[1] = (uint8_t)current_status.is_alarm_active;
-        SHD_CAN0_Transmit(CAN_ID_STATUS_SYSTEM, can_data_buffer, 2);
+        // // 4. 시스템 상태 CAN 메시지 전송
+        // can_data_buffer[0] = (uint8_t)current_status.current_mode;
+        // can_data_buffer[1] = (uint8_t)current_status.is_alarm_active;
+        // SHD_CAN0_Transmit(CAN_ID_STATUS_SYSTEM, can_data_buffer, 2);
     }
 }
 

@@ -171,8 +171,8 @@ void SHH_Init(void)
     // SHD_IT_EnableIRQ(LPIT0_Ch0_IRQn);         
     // SHD_IT_SetPriority(LPIT0_Ch0_IRQn, 10);
 
-    SHD_IT_EnableIRQ(LPIT0_Ch1_IRQn);         // CAN 500ms Broadcast
-    SHD_IT_SetPriority(LPIT0_Ch1_IRQn, 10);
+    // SHD_IT_EnableIRQ(LPIT0_Ch1_IRQn);        
+    // SHD_IT_SetPriority(LPIT0_Ch1_IRQn, 10);
 
     SHD_IT_EnableIRQ(LPIT0_Ch2_IRQn);         // 1초 보안 경고 상태 LED
     SHD_IT_SetPriority(LPIT0_Ch2_IRQn, 10);

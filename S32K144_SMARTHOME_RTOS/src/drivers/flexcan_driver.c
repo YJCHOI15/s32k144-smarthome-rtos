@@ -85,13 +85,6 @@ void SHD_CAN0_CheckRx(void) {
         rx_data[6] = (data1 >> 8)  & 0xFF;
         rx_data[7] = (data1)       & 0xFF;
 
-        /* 출력 */
-        SHH_Uart_Printf("RX Frame: ID=0x%03X DLC=%d Data=", id, dlc);
-        for (int i=0; i<dlc; i++) {
-            SHH_Uart_Printf("%02X ", rx_data[i]);
-        }
-        SHH_Uart_Printf("\n");
-
         /* 플래그 클리어 (다시 수신 가능하도록) */
         CAN0->IFLAG1 = (1 << 4);
         /* MB4를 다시 Rx Empty 상태로 */
