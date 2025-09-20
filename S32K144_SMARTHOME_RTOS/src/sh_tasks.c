@@ -196,6 +196,7 @@ static void _handle_command(command_msg_t* cmd) {
                 g_system_status.is_alarm_active = false; 
                 g_is_buzzer_started = false;
                 SHH_Buzzer_StopAlarm();
+                SHD_LPIT0_Stop(2);  // 경고 LED4, 5, 6 점멸 타이머 중지
                 SHH_SecurityWarningLED_Off();
                 SHH_ModeLED_Set(g_system_status.current_mode);
                 xSemaphoreGive(g_system_status_mutex);
