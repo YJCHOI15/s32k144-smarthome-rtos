@@ -47,7 +47,7 @@
 
 #define configCPU_CLOCK_HZ                          ( 48000000UL )
 #define configTICK_RATE_HZ                          ((TickType_t) 1000 )
-#define configMAX_PRIORITIES                        5
+#define configMAX_PRIORITIES                        7
 #define configMINIMAL_STACK_SIZE                    ((unsigned short) 90 )
 #define configMAX_TASK_NAME_LEN                     10
 #define configUSE_16_BIT_TICKS                      0
@@ -102,7 +102,7 @@ PRIORITY THAN THIS! (higher priorities are lower numeric values. */
 
 /* Software timer related definitions. */
 #define configUSE_TIMERS                            1
-#define configTIMER_TASK_PRIORITY                   10
+#define configTIMER_TASK_PRIORITY                   4
 #define configTIMER_QUEUE_LENGTH                    10
 #define configTIMER_TASK_STACK_DEPTH                180
 

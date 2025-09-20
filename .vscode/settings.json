@@ -9,6 +9,7 @@
         "lpit_driver.h": "c",
         "adc_driver.h": "c",
         "shh_led.h": "c",
-        "gpio_driver.h": "c"
+        "gpio_driver.h": "c",
+        "shh_system.h": "c"
     }
 }

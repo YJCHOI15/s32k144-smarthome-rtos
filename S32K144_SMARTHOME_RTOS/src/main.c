@@ -14,6 +14,7 @@
 
 /* Including necessary configuration files. */
 #include "sdk_project_config.h"
+#include "S32K144.h"
 
 #include "sh_config.h"
 #include "sh_tasks.h"
@@ -45,12 +46,12 @@ int main(void)
 
     /* RTOS 태스크 생성 */
     xTaskCreate(SH_MainControl_Task, "MainCtrl", 2048, NULL, 5, NULL);
-    // xTaskCreate(SH_Sensor_Task, "Sensor", 512, NULL, 4, NULL);
-    // xTaskCreate(SH_ButtonInput_Task, "Button", 512, NULL, 6, NULL);
-    // xTaskCreate(SH_Display_Task, "Display", 1024, NULL, 3, NULL);
-    // xTaskCreate(FND_Scan_Task, "FNDScanTask", 128, NULL, 3, NULL);
-    // xTaskCreate(SH_SecurityEvent_Task, "Security", 256, NULL, 7, NULL);
-    xTaskCreate(SH_CanComm_Task, "CAN", 256, NULL, 4, NULL);
+    xTaskCreate(SH_Sensor_Task, "Sensor", 512, NULL, 4, NULL);
+    xTaskCreate(SH_ButtonInput_Task, "Button", 512, NULL, 3, NULL);
+    xTaskCreate(SH_Display_Task, "Display", 1024, NULL, 2, NULL);
+    xTaskCreate(FND_Scan_Task, "FNDScanTask", 128, NULL, 3, NULL);
+    // xTaskCreate(SH_SecurityEvent_Task, "Security", 256, NULL, 5, NULL);
+    // xTaskCreate(SH_CanComm_Task, "CAN", 256, NULL, 6, NULL);
 
     /* RTOS 스케줄러 시작 */
     vTaskStartScheduler();

@@ -160,10 +160,10 @@ void SHH_Init(void)
 
     // NVIC 인터럽트 활성화 및 우선순위 설정
     SHD_IT_EnableIRQ(PORTC_IRQn);             // uWave-echo(PTC13)
-    SHD_IT_SetPriority(PORTC_IRQn, 6);
+    SHD_IT_SetPriority(PORTC_IRQn, 7);
 
     SHD_IT_EnableIRQ(PORTE_IRQn);             // 버튼(PTE13-16)
-    SHD_IT_SetPriority(PORTE_IRQn, 8);
+    SHD_IT_SetPriority(PORTE_IRQn, 7);
 
     // SHD_IT_EnableIRQ(LPIT0_Ch0_IRQn);         
     // SHD_IT_SetPriority(LPIT0_Ch0_IRQn, 10);
@@ -171,7 +171,7 @@ void SHH_Init(void)
     // SHD_IT_EnableIRQ(LPIT0_Ch1_IRQn);        
     // SHD_IT_SetPriority(LPIT0_Ch1_IRQn, 10);
 
-    SHD_IT_EnableIRQ(LPIT0_Ch2_IRQn);         // 1초 보안 경고 상태 LED
+    SHD_IT_EnableIRQ(LPIT0_Ch2_IRQn);         // 보안 경고 상태 LED
     SHD_IT_SetPriority(LPIT0_Ch2_IRQn, 10);
 
     // SHD_IT_EnableIRQ(LPIT0_Ch3_IRQn);         // us 딜레이 함수

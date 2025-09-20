@@ -218,7 +218,7 @@ static void _handle_command(command_msg_t* cmd) {
             uint8_t device_id = (cmd->value) & 0xFF;       
             int32_t action_value = (cmd->value) >> 8;   
 
-            SHH_Uart_Printf("value = 0x%08X\r\n",cmd->value);
+            // SHH_Uart_Printf("value = 0x%08X\r\n",cmd->value);
 
             switch(device_id) {
                 case 1: // DEVICE_SERVO
@@ -439,7 +439,7 @@ void SH_ButtonInput_Task(void *pvParameters) {
             // 2. 채터링 방지를 위한 대기
             vTaskDelay(pdMS_TO_TICKS(50));
 
-            // 3. 어떤 버튼이 눌렸는지 확인하고, 해당하는 명령을 생성합니다.
+            // 3. 어떤 버튼이 눌렸는지 확인하고, 해당하는 명령을 생성
             if (SHD_GPIO_ReadPin(PIN_BTN1) == 0) {
                 cmd_msg.command_id = CMD_BTN1_CYCLE_MODE;
                 xQueueSend(g_command_queue, &cmd_msg, 0);
@@ -473,12 +473,15 @@ void PORTE_IRQHandler(void) {
     // 인터럽트가 발생했음을 ButtonInput_Task에 알린다 (세마포어 전달).
     xSemaphoreGiveFromISR(g_button_interrupt_semaphore, &xHigherPriorityTaskWoken);
 
-    // 버튼 핀만 클리어
-    PORTE->ISFR = (1UL << 13) | (1UL << 14) | (1UL << 15) | (1UL << 16);
-
-    // 만약 세마포어 전달로 인해 더 높은 우선순위의 태스크가 깨어났다면,
-    // 즉시 컨텍스트 스위칭을 요청한다.
-    // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    // 누른 버튼 핀만 클리어
+    if (PORTE->ISFR & (1UL << 13))
+        PORTE->ISFR = (1UL << 13);
+    if (PORTE->ISFR & (1UL << 14))
+        PORTE->ISFR = (1UL << 14);
+    if (PORTE->ISFR & (1UL << 15))
+        PORTE->ISFR = (1UL << 15);
+    if (PORTE->ISFR & (1UL << 16))
+        PORTE->ISFR = (1UL << 16);
 }
 
 /********************************************************************/
@@ -548,10 +551,6 @@ static void __can_rx_callback(uint32_t id, uint8_t* data, uint8_t dlc) {
             }
             break;
     }
-    
-    // // 만약 큐 전송으로 인해 더 높은 우선순위의 태스크가 깨어났다면,
-    // // ISR 종료 후 즉시 컨텍스트 스위칭을 수행합니다.
-    // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 /********************************************************************/
@@ -631,7 +630,7 @@ void SH_SecurityEvent_Task(void *pvParameters) {
             SHH_uWave_StartMeasurement();
 
             uint16_t distance_cm = SHH_uWave_GetDistanceCm();
-            SHH_Uart_Printf("distance: %d\r\n", distance_cm);
+            // SHH_Uart_Printf("distance: %d\r\n", distance_cm);
 
             if ((distance_cm != 0xFFFF) && (distance_cm < SECURITY_DISTANCE_THRESHOLD_CM)) {
                 xEventGroupSetBits(g_security_event_group, 0x01);
