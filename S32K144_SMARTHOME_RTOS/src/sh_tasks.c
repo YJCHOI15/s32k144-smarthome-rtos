@@ -405,7 +405,7 @@ void SH_Sensor_Task(void *pvParameters) {
 
     for (;;) {
         // 1. 주기적으로 실행
-        vTaskDelay(pdMS_TO_TICKS(500));
+        vTaskDelay(pdMS_TO_TICKS(1000));
 
         // 2. HAL 함수를 호출하여 모든 센서 값을 읽어온다.
         sensor_data_to_send.temperature = SHH_ReadTemperature();
