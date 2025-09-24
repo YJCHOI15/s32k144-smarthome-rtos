@@ -161,6 +161,7 @@ extern SemaphoreHandle_t g_display_data_mutex;
 extern SemaphoreHandle_t g_uart_mutex;
 
 extern SemaphoreHandle_t g_button_interrupt_semaphore;
+extern SemaphoreHandle_t g_uwave_interrupt_semaphore;
 
 extern EventGroupHandle_t g_security_event_group;
 

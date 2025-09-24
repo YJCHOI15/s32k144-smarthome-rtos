@@ -41,17 +41,18 @@ int main(void)
     g_uart_mutex = xSemaphoreCreateMutex();
 
     g_button_interrupt_semaphore = xSemaphoreCreateBinary();
+    g_uwave_interrupt_semaphore = xSemaphoreCreateBinary();
 
     g_security_event_group = xEventGroupCreate();
 
     /* RTOS 태스크 생성 */
-    xTaskCreate(SH_MainControl_Task, "MainCtrl", 2048, NULL, 6, NULL);
+    xTaskCreate(SH_MainControl_Task, "MainCtrl", 768, NULL, 6, NULL);
     xTaskCreate(SH_Sensor_Task, "Sensor", 512, NULL, 5, NULL);
-    xTaskCreate(SH_ButtonInput_Task, "Button", 512, NULL, 3, NULL);
-    xTaskCreate(SH_Display_Task, "Display", 1024, NULL, 1, NULL);
-    xTaskCreate(FND_Scan_Task, "FNDScanTask", 128, NULL, 2, NULL);
-    xTaskCreate(SH_SecurityEvent_Task, "Security", 256, NULL, 4, NULL);
-    xTaskCreate(SH_CanComm_Task, "CAN", 256, NULL, 6, NULL);
+    xTaskCreate(SH_ButtonInput_Task, "Button", 256, NULL, 3, NULL);
+    xTaskCreate(SH_Display_Task, "Display", 768, NULL, 1, NULL);
+    xTaskCreate(FND_Scan_Task, "FNDScanTask", 256, NULL, 2, NULL);
+    xTaskCreate(SH_SecurityEvent_Task, "Security", 512, NULL, 4, NULL);
+    xTaskCreate(SH_CanComm_Task, "CAN", 512, NULL, 3, NULL);
 
     /* RTOS 스케줄러 시작 */
     vTaskStartScheduler();

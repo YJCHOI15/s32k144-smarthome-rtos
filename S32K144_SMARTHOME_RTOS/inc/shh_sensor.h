@@ -14,6 +14,7 @@ uint8_t SHH_ReadManualControlVr(void);
 /* 초음파 센서를 사용하여 거리를 측정 (cm) */
 void SHH_uWave_StartMeasurement(void);
 uint16_t SHH_uWave_GetDistanceCm(void);
-void SHH_uWave_Echo_ISR_Handler(void);
+
+extern volatile uint32_t uWave_high_duration_us;
 
 #endif /* SHH_SENSOR_H */

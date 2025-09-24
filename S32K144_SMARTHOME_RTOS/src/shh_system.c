@@ -152,7 +152,7 @@ void SHH_Init(void)
 
     /* 5. 인터럽트 설정 및 활성화 (+lpit0 타이머 주기 설정) */
     // 핀 인터럽트 설정
-    // SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_IRQ_RISING); // Trig 핀 활성화 시 인터럽트 설정
+    SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_IRQ_EITHER); // Echo 핀 인터럽트를 상승/하강 엣지 모두에서 감지
     SHD_PORT_SetPinIT(PIN_BTN1, PORT_IT_IRQ_FALLING);
     SHD_PORT_SetPinIT(PIN_BTN2, PORT_IT_IRQ_FALLING);
     SHD_PORT_SetPinIT(PIN_BTN3, PORT_IT_IRQ_FALLING);

@@ -182,12 +182,11 @@ uint8_t SHH_ReadManualControlVr(void) {
      *         cm 단위: Echo(us) / 58 = 거리(cm)
      */
 
-static volatile uint32_t uWave_high_duration_us;
+volatile uint32_t uWave_high_duration_us;
      
 void SHH_uWave_StartMeasurement(void) {
 
-    // 1. Echo 핀을 상승 에지 인터럽트로 설정
-    SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_IRQ_RISING);
+    uWave_high_duration_us = 0;
 
     // 2. Trig 핀에 10us High 펄스 전송
     SHD_GPIO_WritePin(PIN_UWAVE_TRIG, 1);
@@ -197,20 +196,7 @@ void SHH_uWave_StartMeasurement(void) {
 
 
 uint16_t SHH_uWave_GetDistanceCm(void) {
-    if (uWave_high_duration_us == 0) return 0xFFFF;
-    return (uint16_t)(uWave_high_duration_us / 58);
-}
-
-void SHH_uWave_Echo_ISR_Handler(void) {
-    static uint32_t start_time = 0;
-
-    if (SHD_GPIO_ReadPin(PIN_UWAVE_ECHO)) {
-        // Rising edge
-        start_time = SHD_LPIT0_GetCurrentUs(1); 
-        SHD_PORT_SetPinIT(PIN_UWAVE_ECHO, PORT_IT_IRQ_FALLING);
-    } else {
-        // Falling edge
-        uint32_t end_time = SHD_LPIT0_GetCurrentUs(1);
-        uWave_high_duration_us = end_time - start_time;
-    }
+    uint32_t duration = uWave_high_duration_us;
+    if (duration == 0) return 0xFFFF;
+    return (uint16_t)(duration / 58);
 }

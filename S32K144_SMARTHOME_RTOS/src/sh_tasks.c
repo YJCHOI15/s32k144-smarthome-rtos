@@ -28,6 +28,7 @@ SemaphoreHandle_t g_display_data_mutex;
 SemaphoreHandle_t g_uart_mutex;
 
 SemaphoreHandle_t g_button_interrupt_semaphore;
+SemaphoreHandle_t g_uwave_interrupt_semaphore;
 
 EventGroupHandle_t g_security_event_group;
 
@@ -89,6 +90,8 @@ void SH_MainControl_Task(void *pvParameters) {
     xSemaphoreGive(g_system_status_mutex);
     SHH_ModeLED_Set(MODE_MONITORING);
 
+    // TickType_t last_check_time = 0;
+
     for (;;) {
 
         // 3. Command 또는 Sensor 데이터가 큐에 들어오거나, 보안 이벤트가 발생할 때까지 Blocked
@@ -114,6 +117,19 @@ void SH_MainControl_Task(void *pvParameters) {
             _handle_security_event();
             xEventGroupClearBits(g_security_event_group, 0x01); // 이벤트 처리 후 플래그 클리어
         }
+
+        // // 1초에 한 번씩만 스택 잔여량을 UART로 출력
+        // if (xTaskGetTickCount() - last_check_time > pdMS_TO_TICKS(1000)) {
+        //     // 현재 태스크의 최소 스택 잔여량(단위: Words)을 확인
+        //     UBaseType_t stack_remaining = uxTaskGetStackHighWaterMark(NULL);
+            
+        //     // 현재 태스크 이름과 남은 스택 크기를 출력
+        //     SHH_Uart_Printf("[%s] Stack Remaining: %lu words\r\n", 
+        //                     pcTaskGetName(NULL), 
+        //                     stack_remaining);
+            
+        //     last_check_time = xTaskGetTickCount();
+        // }
     }
 }
 
@@ -404,6 +420,8 @@ void SH_Sensor_Task(void *pvParameters) {
     (void)pvParameters;
     sensor_data_t sensor_data_to_send;
 
+    // TickType_t last_check_time = 0;
+
     for (;;) {
         // 1. 주기적으로 실행
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -423,6 +441,19 @@ void SH_Sensor_Task(void *pvParameters) {
         // xQueueSend는 큐에 공간이 생길 때까지 기다리지 않고 즉시 반환될 수 있다.
         // 이 경우 큐가 꽉 차지 않았다고 가정한다.
         xQueueSend(g_sensor_data_queue, &sensor_data_to_send, 0);
+
+        // // 1초에 한 번씩만 스택 잔여량을 UART로 출력
+        // if (xTaskGetTickCount() - last_check_time > pdMS_TO_TICKS(1000)) {
+        //     // 현재 태스크의 최소 스택 잔여량(단위: Words)을 확인
+        //     UBaseType_t stack_remaining = uxTaskGetStackHighWaterMark(NULL);
+            
+        //     // 현재 태스크 이름과 남은 스택 크기를 출력
+        //     SHH_Uart_Printf("[%s] Stack Remaining: %lu words\r\n", 
+        //                     pcTaskGetName(NULL), 
+        //                     stack_remaining);
+            
+        //     last_check_time = xTaskGetTickCount();
+        // }
     }
 }
 
@@ -433,6 +464,8 @@ void SH_ButtonInput_Task(void *pvParameters) {
 
     (void)pvParameters;
     command_msg_t cmd_msg;
+
+    // TickType_t last_check_time = 0;
     
     for (;;) {
         // 1. 버튼 인터럽트가 발생할 때까지 Blocked
@@ -464,6 +497,19 @@ void SH_ButtonInput_Task(void *pvParameters) {
                 while(SHD_GPIO_ReadPin(PIN_BTN4) == 0) { vTaskDelay(pdMS_TO_TICKS(20)); }
             }
         }
+
+        // // 1초에 한 번씩만 스택 잔여량을 UART로 출력
+        // if (xTaskGetTickCount() - last_check_time > pdMS_TO_TICKS(1000)) {
+        //     // 현재 태스크의 최소 스택 잔여량(단위: Words)을 확인
+        //     UBaseType_t stack_remaining = uxTaskGetStackHighWaterMark(NULL);
+            
+        //     // 현재 태스크 이름과 남은 스택 크기를 출력
+        //     SHH_Uart_Printf("[%s] Stack Remaining: %lu words\r\n", 
+        //                     pcTaskGetName(NULL), 
+        //                     stack_remaining);
+            
+        //     last_check_time = xTaskGetTickCount();
+        // }
     }
 }
 
@@ -498,6 +544,8 @@ void SH_CanComm_Task(void *pvParameters) {
     SH_Can_Init();
     uint8_t can_data_buffer[8];
 
+    // TickType_t last_check_time = 0;
+
     for (;;) {
 
         // 1. 주기적으로 실행
@@ -519,6 +567,20 @@ void SH_CanComm_Task(void *pvParameters) {
         can_data_buffer[0] = (uint8_t)current_status.current_mode;
         can_data_buffer[1] = (uint8_t)current_status.is_alarm_active;
         SHD_CAN0_Transmit(CAN_ID_STATUS_SYSTEM, can_data_buffer, 2);
+
+        // // 1초에 한 번씩만 스택 잔여량을 UART로 출력
+        // if (xTaskGetTickCount() - last_check_time > pdMS_TO_TICKS(1000)) {
+        //     // 현재 태스크의 최소 스택 잔여량(단위: Words)을 확인
+        //     UBaseType_t stack_remaining = uxTaskGetStackHighWaterMark(NULL);
+            
+        //     // 현재 태스크 이름과 남은 스택 크기를 출력
+        //     SHH_Uart_Printf("[%s] Stack Remaining: %lu words\r\n", 
+        //                     pcTaskGetName(NULL), 
+        //                     stack_remaining);
+            
+        //     last_check_time = xTaskGetTickCount();
+        // }
+
     }
 }
 
@@ -561,6 +623,8 @@ void SH_Display_Task(void *pvParameters) {
 
     (void)pvParameters;
 
+    // TickType_t last_check_time = 0;
+
     SHH_OLED_Clear();
 
     for (;;) {
@@ -595,6 +659,20 @@ void SH_Display_Task(void *pvParameters) {
         SHH_OLED_SetCursor(0, 2); 
         SHH_OLED_PrintString_5x8(temp_device_str);
 
+        // // 1초에 한 번씩만 스택 잔여량을 UART로 출력
+        // if (xTaskGetTickCount() - last_check_time > pdMS_TO_TICKS(1000)) {
+        //     // 현재 태스크의 최소 스택 잔여량(단위: Words)을 확인
+        //     UBaseType_t stack_remaining = uxTaskGetStackHighWaterMark(NULL);
+            
+        //     // 현재 태스크 이름과 남은 스택 크기를 출력
+        //     SHH_Uart_Printf("[%s] Stack Remaining: %lu words\r\n", 
+        //                     pcTaskGetName(NULL), 
+        //                     stack_remaining);
+            
+        //     last_check_time = xTaskGetTickCount();
+        // }
+
+
     }
 }
 
@@ -602,6 +680,7 @@ void FND_Scan_Task(void *pvParameters) {
     (void)pvParameters;
     const TickType_t xPeriod = pdMS_TO_TICKS(2);
     TickType_t xLastWakeTime = xTaskGetTickCount();
+    // TickType_t last_check_time = 0;
 
     for (;;) {
         // 1. Mutex 없이 바로 버퍼에서 읽어서 스캔
@@ -609,6 +688,19 @@ void FND_Scan_Task(void *pvParameters) {
 
         // 2. 1ms 정확하게 대기
         vTaskDelayUntil(&xLastWakeTime, xPeriod);
+
+        // // 1초에 한 번씩만 스택 잔여량을 UART로 출력
+        // if (xTaskGetTickCount() - last_check_time > pdMS_TO_TICKS(1000)) {
+        //     // 현재 태스크의 최소 스택 잔여량(단위: Words)을 확인
+        //     UBaseType_t stack_remaining = uxTaskGetStackHighWaterMark(NULL);
+            
+        //     // 현재 태스크 이름과 남은 스택 크기를 출력
+        //     SHH_Uart_Printf("[%s] Stack Remaining: %lu words\r\n", 
+        //                     pcTaskGetName(NULL), 
+        //                     stack_remaining);
+            
+        //     last_check_time = xTaskGetTickCount();
+        // }
     }
 }
 /********************************************************************/
@@ -618,37 +710,70 @@ void SH_SecurityEvent_Task(void *pvParameters) {
 
     (void)pvParameters;
 
+    // TickType_t last_check_time = 0;
+
     for (;;) {
-        // 데이터시트 권장사항(60ms 이상)에 따라 100ms마다 측정 사이클 실행
-        vTaskDelay(pdMS_TO_TICKS(100));
+        // 데이터시트 권장사항(60ms 이상) 이상 지연
+        vTaskDelay(pdMS_TO_TICKS(200));
 
         // 현재 시스템이 보안 모드일 때만 거리 측정 수행
         xSemaphoreTake(g_system_status_mutex, portMAX_DELAY);
         bool is_security_mode = (g_system_status.current_mode == MODE_SECURITY);
+        bool is_alarm_active = g_system_status.is_alarm_active;
         xSemaphoreGive(g_system_status_mutex);
 
-        if (is_security_mode) {
+        if (is_security_mode && !is_alarm_active) {
+            // 1. 초음파 측정 시작
             SHH_uWave_StartMeasurement();
 
-            uint16_t distance_cm = SHH_uWave_GetDistanceCm();
-            // SHH_Uart_Printf("distance: %d\r\n", distance_cm);
+            // 2. ISR이 측정을 완료하고 세마포어를 줄 때까지 대기 (최대 50ms 타임아웃)
+            if (xSemaphoreTake(g_uwave_interrupt_semaphore, pdMS_TO_TICKS(50)) == pdTRUE) {
+                // 3. 측정이 완료되면 거리 값을 가져와서 로직 처리
+                uint16_t distance_cm = SHH_uWave_GetDistanceCm();
 
-            if ((distance_cm != 0xFFFF) && (distance_cm < SECURITY_DISTANCE_THRESHOLD_CM)) {
-                xEventGroupSetBits(g_security_event_group, 0x01);
+                if ((distance_cm != 0xFFFF) && (distance_cm < SECURITY_DISTANCE_THRESHOLD_CM)) {
+                    xEventGroupSetBits(g_security_event_group, 0x01);
+                }
+            } else {
+                // 타임아웃: 물체가 너무 멀리 있거나 센서 오류
             }
         }
+
+        // // 1초에 한 번씩만 스택 잔여량을 UART로 출력
+        // if (xTaskGetTickCount() - last_check_time > pdMS_TO_TICKS(1000)) {
+        //     // 현재 태스크의 최소 스택 잔여량(단위: Words)을 확인
+        //     UBaseType_t stack_remaining = uxTaskGetStackHighWaterMark(NULL);
+            
+        //     // 현재 태스크 이름과 남은 스택 크기를 출력
+        //     SHH_Uart_Printf("[%s] Stack Remaining: %lu words\r\n", 
+        //                     pcTaskGetName(NULL), 
+        //                     stack_remaining);
+            
+        //     last_check_time = xTaskGetTickCount();
+        // }
     }
 }
 
 void PORTC_IRQHandler(void) {
 
-    // Trig 핀이 초음파를 보내면 Echo 핀이 HIGH 상태가 되어 인터럽트 핸들러가 실행됨
-    if ((PORTC->ISFR & (1UL << 13))) {
-        SHH_uWave_Echo_ISR_Handler();
+    static uint32_t start_time = 0;
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-        // 발생한 모든 핀의 인터럽트 플래그를 클리어
-        // 주의: 다른 PORTC 인터럽트 소스가 있다면, 해당 플래그만 선택적으로 클리어해야 함
-        PORTC->ISFR = (1UL << 13);
+    if (PORTC->ISFR & (1UL << 13)) {
+        // 현재 핀 상태를 읽어 Rising/Falling 엣지 구분
+        if (SHD_GPIO_ReadPin(PIN_UWAVE_ECHO)) {
+            // Rising edge: 시작 시간 기록
+            start_time = SHD_LPIT0_GetCurrentUs(1);
+        } else {
+            // Falling edge: 종료 시간 기록 및 시간 차 계산
+            uint32_t end_time = SHD_LPIT0_GetCurrentUs(1);
+            if (end_time > start_time) {
+                uWave_high_duration_us = end_time - start_time;
+            }
+            // 데이터 측정이 완료되었음을 태스크에게 알림
+            xSemaphoreGiveFromISR(g_uwave_interrupt_semaphore, &xHigherPriorityTaskWoken);
+        }
+        PORTC->ISFR = (1UL << 13); // 인터럽트 플래그 클리어
     }
 
 }
